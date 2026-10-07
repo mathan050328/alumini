@@ -23,8 +23,8 @@ const AlumniVerificationPage = () => {
   const fetchPendingAlumni = async () => {
     setLoading(true);
     try {
-      const response = await getPendingAlumni();
-      setPendingAlumni(response || []);
+      const data = response.data || [];
+      setPendingAlumni(Array.isArray(data) ? data : (data.content || []));
     } catch (error) {
       toast.error('Failed to load pending verifications');
       console.error(error);

@@ -40,8 +40,10 @@ const UserManagementPage = () => {
         search: searchTerm,
         role: roleFilter
       });
-      setUsers(response.users || response.data || []);
-      setTotalPages(response.totalPages || 1);
+      const data = response.data || {};
+      const list = Array.isArray(data) ? data : (data.content || data.users || []);
+      setUsers(list);
+      setTotalPages(data.totalPages || 1);
     } catch (error) {
       toast.error('Failed to fetch users');
       console.error(error);

@@ -18,11 +18,14 @@ const NotificationsPage = () => {
   const fetchNotifications = async () => {
     try {
       setIsLoading(true);
-      const data = await getNotifications({ page, limit: 10 });
-      setNotifications(data.notifications || []);
+      const res = await getNotifications({ page, limit: 10 });
+      const data = res.data || {};
+      const list = Array.isArray(data) ? data : (data.content || data.notifications || []);
+      setNotifications(list);
       setTotalPages(data.totalPages || 1);
     } catch (error) {
       toast.error('Failed to load notifications');
+      setNotifications([]);
     } finally {
       setIsLoading(false);
     }

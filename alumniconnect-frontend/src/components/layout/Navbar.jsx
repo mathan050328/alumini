@@ -12,15 +12,15 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdown, setProfileDropdown] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
-  const dropdownRef = useRef(null);
+  const isAuth = typeof isAuthenticated === 'function' ? isAuthenticated() : !!isAuthenticated;
 
   useEffect(() => {
-    if (isAuthenticated()) {
+    if (isAuth) {
       getUnreadCount()
         .then((res) => setUnreadNotifications(res.data))
         .catch(() => {});
     }
-  }, [location.pathname]);
+  }, [location.pathname, isAuth]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -88,7 +88,7 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <Link to={isAuthenticated() ? getDashboardPath() : '/'} className="flex items-center space-x-2">
+            <Link to={isAuth ? getDashboardPath() : '/'} className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">AC</span>
               </div>
@@ -97,7 +97,7 @@ const Navbar = () => {
           </div>
 
           {/* Desktop Nav Links */}
-          {isAuthenticated() && (
+          {isAuth && (
             <div className="hidden md:flex items-center space-x-1">
               {getNavLinks().map((link) => (
                 <Link
@@ -117,7 +117,7 @@ const Navbar = () => {
 
           {/* Right Section */}
           <div className="flex items-center space-x-3">
-            {isAuthenticated() ? (
+            {isAuth ? (
               <>
                 {/* Messages */}
                 <Link to="/messages" className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg relative">
@@ -190,7 +190,7 @@ const Navbar = () => {
             )}
 
             {/* Mobile menu button */}
-            {isAuthenticated() && (
+            {isAuth && (
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="md:hidden p-2 text-gray-500 hover:text-gray-700 rounded-lg"
@@ -202,7 +202,7 @@ const Navbar = () => {
         </div>
 
         {/* Mobile menu */}
-        {mobileMenuOpen && isAuthenticated() && (
+        {mobileMenuOpen && isAuth && (
           <div className="md:hidden border-t border-gray-200 py-3 space-y-1">
             {getNavLinks().map((link) => (
               <Link

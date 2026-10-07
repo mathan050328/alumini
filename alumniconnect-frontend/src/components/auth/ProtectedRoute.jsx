@@ -8,7 +8,8 @@ const ProtectedRoute = ({ children, roles }) => {
 
   if (loading) return <LoadingSpinner />;
 
-  if (!isAuthenticated()) {
+  const auth = typeof isAuthenticated === 'function' ? isAuthenticated() : !!isAuthenticated;
+  if (!auth) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 

@@ -18,8 +18,8 @@ const EventDetailPage = () => {
   const fetchEvent = async () => {
     try {
       setLoading(true);
-      const data = await getEventById(id);
-      setEvent(data);
+      const res = await getEventById(id);
+      setEvent(res.data);
     } catch (err) {
       setError(err.message || 'Failed to load event details');
       toast.error('Failed to load event details');

@@ -19,12 +19,12 @@ const LoginPage = () => {
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated && user) {
-      if (user.role === 'admin') navigate('/admin');
-      else if (user.role === 'alumni') navigate('/alumni');
-      else navigate('/student');
+    if (user) {
+      if (user.role === 'ROLE_ADMIN' || user.role === 'admin') navigate('/admin/dashboard');
+      else if (user.role === 'ROLE_ALUMNI' || user.role === 'alumni') navigate('/alumni/dashboard');
+      else if (user.role === 'ROLE_STUDENT' || user.role === 'student') navigate('/student/dashboard');
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [user, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

@@ -15,10 +15,12 @@ const StudentReferrals = () => {
   const fetchReferrals = async () => {
     try {
       setIsLoading(true);
-      const data = await getSentReferrals();
-      setReferrals(data || []);
+      const res = await getSentReferrals();
+      const list = Array.isArray(res.data) ? res.data : (res.data?.content || []);
+      setReferrals(list);
     } catch (error) {
       toast.error('Failed to load referral requests');
+      setReferrals([]);
     } finally {
       setIsLoading(false);
     }

@@ -26,9 +26,10 @@ const PostFeedPage = () => {
   const fetchPosts = useCallback(async () => {
     try {
       setLoading(true);
-      const categoryFilter = activeCategory === 'All' ? '' : activeCategory;
-      const data = await getPosts({ category: categoryFilter, page, limit: 10 });
-      setPosts(data.posts || data);
+      const res = await getPosts({ category: categoryFilter, page, limit: 10 });
+      const data = res.data || {};
+      const list = Array.isArray(data) ? data : (data.content || data.posts || []);
+      setPosts(list);
       setTotalPages(data.totalPages || 1);
     } catch (error) {
       toast.error('Failed to load posts');

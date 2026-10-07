@@ -55,7 +55,7 @@ public class StudentProfile {
     @Column(name = "career_interests", columnDefinition = "TEXT")
     private String careerInterests;
 
-    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.MERGE})
     @JoinTable(
             name = "student_skills",
             joinColumns = @JoinColumn(name = "student_profile_id"),

@@ -17,10 +17,12 @@ const AlumniReferrals = () => {
   const fetchReferrals = async () => {
     try {
       setIsLoading(true);
-      const data = await getReceivedReferrals();
-      setReferrals(data || []);
+      const res = await getReceivedReferrals();
+      const list = Array.isArray(res.data) ? res.data : (res.data?.content || []);
+      setReferrals(list);
     } catch (error) {
       toast.error('Failed to load received referrals');
+      setReferrals([]);
     } finally {
       setIsLoading(false);
     }

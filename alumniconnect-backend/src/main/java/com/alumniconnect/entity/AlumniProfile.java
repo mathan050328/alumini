@@ -79,7 +79,7 @@ public class AlumniProfile {
     @Column(name = "verified_at")
     private LocalDateTime verifiedAt;
 
-    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.MERGE})
     @JoinTable(
             name = "alumni_skills",
             joinColumns = @JoinColumn(name = "alumni_profile_id"),

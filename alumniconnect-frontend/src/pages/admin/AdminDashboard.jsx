@@ -19,8 +19,8 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const data = await getDashboardStats();
-        setStats(data);
+        const res = await getDashboardStats();
+        setStats(res.data);
       } catch (error) {
         toast.error('Failed to load dashboard statistics');
         console.error(error);

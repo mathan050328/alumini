@@ -19,15 +19,15 @@ const RegisterPage = () => {
   const [error, setError] = useState('');
   const [passwordStrength, setPasswordStrength] = useState(0);
 
-  const { register, isAuthenticated } = useAuth();
+  const { register, user } = useAuth();
   const navigate = useNavigate();
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated) {
+    if (user) {
       navigate('/');
     }
-  }, [isAuthenticated, navigate]);
+  }, [user, navigate]);
 
   // Calculate password strength
   useEffect(() => {

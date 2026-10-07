@@ -23,8 +23,10 @@ const EventListPage = () => {
   const fetchEvents = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await getEvents({ type: eventType, page, limit });
-      setEvents(data.events || data);
+      const res = await getEvents({ type: eventType, page, limit });
+      const data = res.data || {};
+      const list = Array.isArray(data) ? data : (data.content || data.events || []);
+      setEvents(list);
       setTotalPages(data.totalPages || 1);
     } catch (error) {
       toast.error('Failed to load events');

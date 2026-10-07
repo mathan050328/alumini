@@ -1,17 +1,20 @@
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/alumniconnect?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:root}
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:file:./data/alumniconnect;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=MySQL;DATABASE_TO_LOWER=TRUE}
+    username: ${DB_USERNAME:sa}
+    password: ${DB_PASSWORD:}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER:org.h2.Driver}
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
-        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
@@ -26,6 +29,5 @@ spring:
 
 logging:
   level:
-    com.alumniconnect: DEBUG
-    org.springframework.security: INFO
-    org.hibernate.SQL: DEBUG
+    com.alumniconnect: INFO
+    org.springframework.security: WARN

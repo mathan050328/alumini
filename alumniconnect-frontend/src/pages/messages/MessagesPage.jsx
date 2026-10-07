@@ -25,10 +25,12 @@ const MessagesPage = () => {
   const fetchConversations = async () => {
     try {
       setIsLoadingConversations(true);
-      const data = await getConversations();
-      setConversations(data || []);
+      const res = await getConversations();
+      const list = Array.isArray(res.data) ? res.data : (res.data?.content || []);
+      setConversations(list);
     } catch (error) {
       toast.error('Failed to load conversations');
+      setConversations([]);
     } finally {
       setIsLoadingConversations(false);
     }
@@ -37,11 +39,13 @@ const MessagesPage = () => {
   const fetchMessages = async (id) => {
     try {
       setIsLoadingMessages(true);
-      const data = await getMessages(id);
-      setMessages(data || []);
+      const res = await getMessages(id);
+      const list = Array.isArray(res.data) ? res.data : (res.data?.content || []);
+      setMessages(list);
       scrollToBottom();
     } catch (error) {
       toast.error('Failed to load messages');
+      setMessages([]);
     } finally {
       setIsLoadingMessages(false);
     }
@@ -95,7 +99,7 @@ const MessagesPage = () => {
     return conversation.participants.find(p => p.id !== user?.id && p._id !== user?.id);
   };
 
-  const activeConversation = conversations.find(c => c.id === conversationId || c._id === conversationId);
+  const activeConversation = Array.isArray(conversations) ? conversations.find(c => String(c.id) === String(conversationId) || String(c._id) === String(conversationId)) : null;
   const otherParticipant = getOtherParticipant(activeConversation);
 
   // Mobile layout handling
