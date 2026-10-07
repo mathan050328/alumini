@@ -1,0 +1,14 @@
+package com.alumniconnect.entity.enums;
+
+public enum NotificationType {
+    MENTORSHIP_REQUEST,
+    MENTORSHIP_ACCEPTED,
+    MENTORSHIP_REJECTED,
+    REFERRAL_REQUEST,
+    REFERRAL_ACCEPTED,
+    REFERRAL_REJECTED,
+    NEW_JOB,
+    EVENT_REGISTRATION,
+    EVENT_REMINDER,
+    NEW_MESSAGE
+}
