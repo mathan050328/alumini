@@ -68,13 +68,20 @@ const AlumniDetailPage = () => {
       return;
     }
     // Logic to start conversation or redirect to messages
-    navigate(`/messages?recipient=${id}`);
+    const targetId = profile.userId || id;
+    navigate(`/messages?userId=${targetId}`);
   };
 
   if (loading) return <LoadingSpinner />;
   if (!profile) return <EmptyState title="Profile not found" description="The requested alumni profile could not be found." />;
 
-  const isStudent = user?.role === ROLES.STUDENT;
+  const isStudent = user?.role === ROLES.STUDENT || user?.role === 'ROLE_STUDENT';
+  const profileId = profile?.id || id;
+  const profileName = profile?.fullName || profile?.name || 'Alumni Profile';
+  const profileAvatar = profile?.profilePictureUrl || profile?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150';
+  const isMentor = profile?.mentorshipAvailability === 'AVAILABLE' || profile?.isAvailableForMentorship;
+  const isVerified = profile?.verificationStatus === 'VERIFIED' || profile?.isVerified;
+  const isOwnProfile = user && (String(user.id) === String(profile?.userId) || String(user.id) === String(profile?.id));
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -85,14 +92,14 @@ const AlumniDetailPage = () => {
           <div className="flex justify-between items-end mb-4">
             <div className="-mt-16 flex items-center">
               <img
-                src={profile.avatar || 'https://via.placeholder.com/128'}
-                alt={profile.name}
+                src={profileAvatar}
+                alt={profileName}
                 className="w-32 h-32 rounded-full border-4 border-white bg-white object-cover shadow-sm"
               />
             </div>
             
             <div className="flex gap-3">
-              {isAuthenticated && user._id !== id && (
+              {isAuthenticated && !isOwnProfile && (
                 <button
                   onClick={handleSendMessage}
                   className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm"
@@ -100,7 +107,7 @@ const AlumniDetailPage = () => {
                   <FiMessageSquare /> Message
                 </button>
               )}
-              {isStudent && profile.isAvailableForMentorship && (
+              {isStudent && isMentor && (
                 <button
                   onClick={() => setShowMentorshipModal(true)}
                   className="flex items-center gap-2 px-4 py-2 bg-indigo-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-indigo-700 shadow-sm"
@@ -113,8 +120,8 @@ const AlumniDetailPage = () => {
           
           <div>
             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              {profile.name}
-              {profile.isVerified && <FiCheckCircle className="text-blue-500 w-5 h-5" title="Verified Alumni" />}
+              {profileName}
+              {isVerified && <FiCheckCircle className="text-blue-500 w-5 h-5" title="Verified Alumni" />}
             </h1>
             <p className="text-lg text-gray-600 font-medium mt-1">
               {profile.jobTitle} {profile.currentCompany && `at ${profile.currentCompany}`}

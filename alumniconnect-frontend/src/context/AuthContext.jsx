@@ -22,9 +22,12 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('accessToken', data.accessToken);
     const userData = {
       id: data.userId,
+      rollNumber: data.rollNumber || null,
       email: data.email,
       fullName: data.fullName,
       role: data.role,
+      profilePictureUrl: data.profilePictureUrl || null,
+      passwordChanged: data.passwordChanged ?? true,
     };
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
@@ -36,6 +39,14 @@ export const AuthProvider = ({ children }) => {
     return response.data;
   };
 
+  const updateUser = (updatedFields) => {
+    setUser(prev => {
+      const updated = { ...prev, ...updatedFields };
+      localStorage.setItem('user', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const logout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('user');
@@ -43,10 +54,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isAuthenticated = !!user;
-  const hasRole = (role) => user?.role === role;
+  const hasRole = (role) => {
+    if (!user?.role || !role) return false;
+    const cleanUserRole = String(user.role).replace(/^ROLE_/, '').toUpperCase();
+    const cleanTargetRole = String(role).replace(/^ROLE_/, '').toUpperCase();
+    return cleanUserRole === cleanTargetRole;
+  };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, isAuthenticated, hasRole, checkAuth: () => !!user }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser, isAuthenticated, hasRole, checkAuth: () => !!user }}>
       {children}
     </AuthContext.Provider>
   );

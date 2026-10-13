@@ -14,10 +14,12 @@ import java.time.LocalDateTime;
 public class UserResponse {
 
     private Long id;
+    private String rollNumber;
     private String email;
     private String fullName;
     private String role;
     private String profilePictureUrl;
     private Boolean isActive;
+    private Boolean passwordChanged;
     private LocalDateTime createdAt;
 }

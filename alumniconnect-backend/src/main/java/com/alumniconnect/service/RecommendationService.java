@@ -35,11 +35,13 @@ public class RecommendationService {
         String studentDept = student.getDepartment() != null ? student.getDepartment().toLowerCase().trim() : "";
         String studentInterests = student.getCareerInterests() != null ? student.getCareerInterests().toLowerCase() : "";
 
-        List<AlumniProfile> verifiedAlumni = alumniProfileRepository.findByVerificationStatus(VerificationStatus.VERIFIED);
+        List<AlumniProfile> eligibleAlumni = alumniProfileRepository.findAll().stream()
+                .filter(a -> a.getUser() != null && Boolean.TRUE.equals(a.getUser().getIsActive()) && a.getVerificationStatus() != VerificationStatus.REJECTED)
+                .collect(Collectors.toList());
 
         List<RecommendedAlumniResponse> recommendations = new ArrayList<>();
 
-        for (AlumniProfile alumni : verifiedAlumni) {
+        for (AlumniProfile alumni : eligibleAlumni) {
             Set<String> alumniSkills = alumni.getSkills().stream()
                     .map(s -> s.getName().toLowerCase().trim())
                     .collect(Collectors.toSet());

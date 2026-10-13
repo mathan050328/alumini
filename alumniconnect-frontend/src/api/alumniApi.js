@@ -8,5 +8,17 @@ export const addAlumniSkills = (skills) => api.post('/alumni/profile/skills', { 
 export const removeAlumniSkill = (skillId) => api.delete(`/alumni/profile/skills/${skillId}`);
 export const addAlumniExperience = (data) => api.post('/alumni/profile/experience', data);
 export const removeAlumniExperience = (expId) => api.delete(`/alumni/profile/experience/${expId}`);
-export const uploadAlumniPicture = (formData) => api.post('/alumni/profile/picture', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-export const toggleMentorshipStatus = (status) => api.patch('/alumni/profile/mentorship-status', { status });
+
+export const uploadAlumniPicture = (file) => {
+  let formData = file;
+  if (!(file instanceof FormData)) {
+    formData = new FormData();
+    formData.append('file', file);
+  }
+  return api.post('/alumni/profile/picture', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
+
+export const toggleMentorshipStatus = (status) =>
+  api.patch('/alumni/profile/mentorship-status', { status });

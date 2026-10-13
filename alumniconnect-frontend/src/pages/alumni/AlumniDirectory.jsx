@@ -22,30 +22,49 @@ const AlumniDirectory = () => {
 
   useEffect(() => {
     fetchAlumni();
-  }, [filters.page, filters.department, filters.company]);
+  }, [filters.page, filters.department, filters.company, filters.search]);
 
   const fetchAlumni = async () => {
     try {
       setLoading(true);
-      const res = await searchAlumni(filters);
-      setAlumni(res.data?.alumni || []);
-      setTotalPages(res.data?.totalPages || 1);
+      const params = {
+        keyword: filters.search?.trim() || undefined,
+        department: filters.department || undefined,
+        company: filters.company?.trim() || undefined,
+        page: Math.max(0, filters.page - 1),
+        size: filters.limit || 12
+      };
+      const res = await searchAlumni(params);
+      const data = res.data || {};
+      const list = data.content || (Array.isArray(data) ? data : (data.alumni || []));
+      setAlumni(list);
+      setTotalPages(data.totalPages || 1);
     } catch (error) {
       toast.error('Failed to load alumni directory');
+      setAlumni([]);
     } finally {
       setLoading(false);
     }
   };
 
   const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    setFilters(prev => ({ ...prev, page: 1 }));
+    if (e) e.preventDefault();
     fetchAlumni();
   };
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
+  };
+
+  const handleResetFilters = () => {
+    setFilters({
+      search: '',
+      department: '',
+      company: '',
+      page: 1,
+      limit: 12
+    });
   };
 
   return (
@@ -112,9 +131,20 @@ const AlumniDirectory = () => {
                 />
               </div>
 
-              <button type="submit" className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium transition-colors">
-                Apply Filters
-              </button>
+              <div className="flex gap-2">
+                <button type="submit" className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium transition-colors cursor-pointer">
+                  Apply Filters
+                </button>
+                {(filters.search || filters.department || filters.company) && (
+                  <button 
+                    type="button" 
+                    onClick={handleResetFilters}
+                    className="px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm font-medium transition-colors cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
             </form>
           </div>
         </div>
@@ -128,63 +158,72 @@ const AlumniDirectory = () => {
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {alumni.map((person) => (
-                  <Link key={person._id} to={`/alumni/${person._id}`} className="block group">
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow h-full flex flex-col">
-                      <div className="p-6 flex-1">
-                        <div className="flex justify-between items-start mb-4">
-                          <img
-                            src={person.avatar || 'https://via.placeholder.com/64'}
-                            alt={person.name}
-                            className="w-16 h-16 rounded-full object-cover border border-gray-200"
-                          />
-                          {person.isAvailableForMentorship && (
-                            <Badge variant="success" className="text-xs">Mentorship</Badge>
-                          )}
-                        </div>
-                        
-                        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-1 group-hover:text-indigo-600 transition-colors">
-                          {person.name}
-                          {person.isVerified && <FiCheckCircle className="text-blue-500 w-4 h-4" />}
-                        </h3>
-                        
-                        <div className="mt-2 space-y-2">
-                          {person.jobTitle && (
-                            <p className="text-sm text-gray-600 flex items-start gap-2">
-                              <FiBriefcase className="mt-0.5 flex-shrink-0" />
-                              <span className="line-clamp-2">{person.jobTitle} {person.currentCompany && `at ${person.currentCompany}`}</span>
-                            </p>
-                          )}
-                          
-                          {person.location && (
-                            <p className="text-sm text-gray-500 flex items-center gap-2">
-                              <FiMapPin className="flex-shrink-0" />
-                              {person.location}
-                            </p>
-                          )}
-                        </div>
+                {alumni.map((person) => {
+                  const personId = person.id || person._id;
+                  const personName = person.fullName || person.name || 'Alumni Member';
+                  const personAvatar = person.profilePictureUrl || person.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150';
+                  const isMentor = person.mentorshipAvailability === 'AVAILABLE' || person.isAvailableForMentorship;
+                  const isVerified = person.verificationStatus === 'VERIFIED' || person.isVerified;
+                  const skillList = Array.isArray(person.skills) ? person.skills : (person.skills ? Array.from(person.skills) : []);
 
-                        {person.skills && person.skills.length > 0 && (
-                          <div className="mt-4 flex flex-wrap gap-1.5">
-                            {person.skills.slice(0, 3).map((skill, idx) => (
-                              <span key={idx} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
-                                {skill}
-                              </span>
-                            ))}
-                            {person.skills.length > 3 && (
-                              <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">+{person.skills.length - 3}</span>
+                  return (
+                    <Link key={personId} to={`/alumni/${personId}`} className="block group">
+                      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow h-full flex flex-col">
+                        <div className="p-6 flex-1">
+                          <div className="flex justify-between items-start mb-4">
+                            <img
+                              src={personAvatar}
+                              alt={personName}
+                              className="w-16 h-16 rounded-full object-cover border border-gray-200"
+                            />
+                            {isMentor && (
+                              <Badge variant="success" className="text-xs">Mentorship</Badge>
                             )}
                           </div>
-                        )}
+                          
+                          <h3 className="text-lg font-bold text-gray-900 flex items-center gap-1 group-hover:text-indigo-600 transition-colors">
+                            {personName}
+                            {isVerified && <FiCheckCircle className="text-blue-500 w-4 h-4" />}
+                          </h3>
+                          
+                          <div className="mt-2 space-y-2">
+                            {person.jobTitle && (
+                              <p className="text-sm text-gray-600 flex items-start gap-2">
+                                <FiBriefcase className="mt-0.5 flex-shrink-0" />
+                                <span className="line-clamp-2">{person.jobTitle} {person.currentCompany && `at ${person.currentCompany}`}</span>
+                              </p>
+                            )}
+                            
+                            {person.location && (
+                              <p className="text-sm text-gray-500 flex items-center gap-2">
+                                <FiMapPin className="flex-shrink-0" />
+                                {person.location}
+                              </p>
+                            )}
+                          </div>
+
+                          {skillList.length > 0 && (
+                            <div className="mt-4 flex flex-wrap gap-1.5">
+                              {skillList.slice(0, 3).map((skill, idx) => (
+                                <span key={idx} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
+                                  {skill}
+                                </span>
+                              ))}
+                              {skillList.length > 3 && (
+                                <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">+{skillList.length - 3}</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+                          <span className="text-xs text-gray-500 font-medium">Class of {person.graduationYear || 'N/A'}</span>
+                          <span className="text-sm text-indigo-600 font-medium group-hover:underline">View Profile</span>
+                        </div>
                       </div>
-                      
-                      <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
-                        <span className="text-xs text-gray-500 font-medium">Class of {person.graduationYear || 'N/A'}</span>
-                        <span className="text-sm text-indigo-600 font-medium group-hover:underline">View Profile</span>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  );
+                })}
               </div>
               
               {totalPages > 1 && (

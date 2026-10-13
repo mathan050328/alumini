@@ -34,107 +34,165 @@ public class DatabaseSeeder implements CommandLineRunner {
     @Override
     public void run(String... args) {
         if (userRepository.count() > 0) {
-            logger.info("Database already seeded. Skipping initial seeding.");
+            ensurePendingAlumniVerified();
             return;
         }
 
-        logger.info("Seeding initial platform data for demonstration & testing...");
+        logger.info("Initializing default development dataset...");
 
-        // 1. Seed Skills Master Table
+        seedSkills();
+        Skill javaSkill = findSkill("Java");
+        Skill springSkill = findSkill("Spring Boot");
+        Skill reactSkill = findSkill("React.js");
+        Skill awsSkill = findSkill("AWS");
+        Skill dockerSkill = findSkill("Docker");
+
+        User admin = createAdminUser();
+
+        AlumniProfile arunAlumni = createAlumni(
+                "15CS042",
+                "arun.dev@gmail.com",
+                "Arun",
+                "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+                "+91 9876501234",
+                "Computer Science and Engineering",
+                2019,
+                "Infosys",
+                "Senior Systems Engineer",
+                5,
+                "Pune, India",
+                "Working as a backend engineer at Infosys for the past 5 years. I mainly deal with microservices and REST APIs. " +
+                "Happy to help juniors with resume reviews, mock interviews, or just figuring out where to start with placements.",
+                "https://github.com/arun-dev",
+                "https://linkedin.com/in/arun-dev",
+                Arrays.asList(javaSkill, springSkill, dockerSkill, awsSkill)
+        );
+
+        AlumniProfile jenishAlumni = createAlumni(
+                "17IT089",
+                "jenish.dev@gmail.com",
+                "Jenish",
+                "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150",
+                "+91 9845002345",
+                "Information Technology",
+                2021,
+                "Zoho Corporation",
+                "Software Developer",
+                3,
+                "Chennai, India",
+                "Full stack developer at Zoho. I work on the CRM module — mostly Java on the backend and React for the UI. " +
+                "I remember how confusing placements were in final year, so I try to be available for anyone who needs guidance.",
+                "https://github.com/jenish-dev",
+                "https://linkedin.com/in/jenish-dev",
+                Arrays.asList(javaSkill, reactSkill, awsSkill)
+        );
+
+        createDefaultStudent(Arrays.asList(javaSkill, springSkill, reactSkill));
+        seedJobs(arunAlumni, jenishAlumni);
+        seedEvents(arunAlumni.getUser(), admin);
+        seedPosts(arunAlumni);
+
+        logger.info("Development dataset initialized.");
+    }
+
+    private void ensurePendingAlumniVerified() {
+        List<AlumniProfile> pendingAlumni = alumniProfileRepository.findByVerificationStatus(VerificationStatus.PENDING);
+        for (AlumniProfile profile : pendingAlumni) {
+            profile.setVerificationStatus(VerificationStatus.VERIFIED);
+            if (profile.getVerifiedAt() == null) {
+                profile.setVerifiedAt(LocalDateTime.now());
+            }
+            alumniProfileRepository.save(profile);
+        }
+    }
+
+    private void seedSkills() {
         List<String> skillNames = Arrays.asList(
                 "Java", "Spring Boot", "React.js", "MySQL", "AWS",
                 "Docker", "System Design", "Microservices", "Python",
                 "Kubernetes", "Data Structures", "Tailwind CSS", "TypeScript",
                 "GraphQL", "Redis", "Kafka", "Machine Learning"
         );
-
         for (String name : skillNames) {
             skillRepository.save(Skill.builder().name(name).build());
         }
+    }
 
-        Skill javaSkill = skillRepository.findByNameIgnoreCase("Java").orElse(null);
-        Skill springSkill = skillRepository.findByNameIgnoreCase("Spring Boot").orElse(null);
-        Skill reactSkill = skillRepository.findByNameIgnoreCase("React.js").orElse(null);
-        Skill awsSkill = skillRepository.findByNameIgnoreCase("AWS").orElse(null);
-        Skill dockerSkill = skillRepository.findByNameIgnoreCase("Docker").orElse(null);
+    private Skill findSkill(String name) {
+        return skillRepository.findByNameIgnoreCase(name).orElse(null);
+    }
 
-        // 2. Seed Admin User
+    private User createAdminUser() {
         User admin = User.builder()
+                .rollNumber("ADMIN01")
                 .email("admin@alumniconnect.com")
                 .password(passwordEncoder.encode("Admin@123"))
                 .fullName("System Administrator")
                 .role(Role.ROLE_ADMIN)
                 .isActive(true)
+                .passwordChanged(true)
                 .build();
-        userRepository.save(admin);
+        return userRepository.save(admin);
+    }
 
-        // 3. Seed Verified Alumni (Working at Google)
-        User alumniUser1 = User.builder()
-                .email("sundar.alumni@google.com")
+    private AlumniProfile createAlumni(
+            String rollNumber,
+            String email,
+            String fullName,
+            String avatarUrl,
+            String phone,
+            String department,
+            int graduationYear,
+            String company,
+            String jobTitle,
+            int experience,
+            String location,
+            String bio,
+            String githubUrl,
+            String linkedinUrl,
+            List<Skill> skills
+    ) {
+        User user = User.builder()
+                .rollNumber(rollNumber)
+                .email(email)
                 .password(passwordEncoder.encode("Password@123"))
-                .fullName("Sundar Pichai (Alumni)")
+                .fullName(fullName)
                 .role(Role.ROLE_ALUMNI)
                 .isActive(true)
-                .profilePictureUrl("https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150")
+                .passwordChanged(true)
+                .profilePictureUrl(avatarUrl)
                 .build();
-        userRepository.save(alumniUser1);
+        userRepository.save(user);
 
-        AlumniProfile alumniProfile1 = AlumniProfile.builder()
-                .user(alumniUser1)
-                .phone("+91 9876543210")
-                .department("Computer Science and Engineering")
-                .graduationYear(2018)
-                .currentCompany("Google")
-                .jobTitle("Senior Software Engineer")
-                .yearsOfExperience(6)
-                .location("Bangalore, India")
-                .professionalBio("Passionate about distributed systems, cloud computing, and helping university students navigate tech careers.")
-                .githubUrl("https://github.com")
-                .linkedinUrl("https://linkedin.com")
+        AlumniProfile profile = AlumniProfile.builder()
+                .user(user)
+                .phone(phone)
+                .department(department)
+                .graduationYear(graduationYear)
+                .currentCompany(company)
+                .jobTitle(jobTitle)
+                .yearsOfExperience(experience)
+                .location(location)
+                .professionalBio(bio)
+                .githubUrl(githubUrl)
+                .linkedinUrl(linkedinUrl)
                 .verificationStatus(VerificationStatus.VERIFIED)
                 .mentorshipAvailability(MentorshipAvailability.AVAILABLE)
                 .verifiedAt(LocalDateTime.now())
-                .skills(new HashSet<>(Arrays.asList(javaSkill, springSkill, awsSkill, dockerSkill)))
+                .skills(new HashSet<>(skills))
                 .build();
-        alumniProfileRepository.save(alumniProfile1);
+        return alumniProfileRepository.save(profile);
+    }
 
-        // 4. Seed Verified Alumni (Working at Amazon)
-        User alumniUser2 = User.builder()
-                .email("priya.alumni@amazon.com")
-                .password(passwordEncoder.encode("Password@123"))
-                .fullName("Priya Sharma")
-                .role(Role.ROLE_ALUMNI)
-                .isActive(true)
-                .profilePictureUrl("https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150")
-                .build();
-        userRepository.save(alumniUser2);
-
-        AlumniProfile alumniProfile2 = AlumniProfile.builder()
-                .user(alumniUser2)
-                .phone("+91 9876543211")
-                .department("Information Technology")
-                .graduationYear(2020)
-                .currentCompany("Amazon")
-                .jobTitle("Software Development Engineer II")
-                .yearsOfExperience(4)
-                .location("Hyderabad, India")
-                .professionalBio("SDE II at Amazon. Open to mentoring students on DSA, LeetCode preparation, and behavioral interviews.")
-                .githubUrl("https://github.com")
-                .linkedinUrl("https://linkedin.com")
-                .verificationStatus(VerificationStatus.VERIFIED)
-                .mentorshipAvailability(MentorshipAvailability.AVAILABLE)
-                .verifiedAt(LocalDateTime.now())
-                .skills(new HashSet<>(Arrays.asList(javaSkill, reactSkill, awsSkill)))
-                .build();
-        alumniProfileRepository.save(alumniProfile2);
-
-        // 5. Seed Student User
+    private void createDefaultStudent(List<Skill> skills) {
         User studentUser = User.builder()
+                .rollNumber("21CS101")
                 .email("student@alumniconnect.com")
                 .password(passwordEncoder.encode("Password@123"))
                 .fullName("Rahul Verma")
                 .role(Role.ROLE_STUDENT)
                 .isActive(true)
+                .passwordChanged(false)
                 .profilePictureUrl("https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150")
                 .build();
         userRepository.save(studentUser);
@@ -145,95 +203,101 @@ public class DatabaseSeeder implements CommandLineRunner {
                 .department("Computer Science and Engineering")
                 .degree("B.Tech")
                 .graduationYear(2025)
-                .bio("Final year CSE student preparing for SDE roles. Strong foundation in Java, Spring Boot, and Full Stack Development.")
-                .githubUrl("https://github.com")
-                .linkedinUrl("https://linkedin.com")
-                .careerInterests("Backend Engineering, Distributed Systems, Cloud Computing")
-                .skills(new HashSet<>(Arrays.asList(javaSkill, springSkill, reactSkill)))
+                .bio("Final year CSE student. Been working on a couple of side projects and trying to get better at system design. " +
+                     "Looking for SDE roles in backend or full stack. Open to connecting with alumni for guidance.")
+                .githubUrl("https://github.com/rahulverma25")
+                .linkedinUrl("https://linkedin.com/in/rahul-verma-cse")
+                .careerInterests("Backend Engineering, Full Stack Development, Cloud Computing")
+                .skills(new HashSet<>(skills))
                 .build();
         studentProfileRepository.save(studentProfile);
+    }
 
-        // 6. Seed Sample Jobs
+    private void seedJobs(AlumniProfile arunAlumni, AlumniProfile jenishAlumni) {
         Job job1 = Job.builder()
-                .alumni(alumniProfile1)
-                .title("Software Engineer - Cloud Backend")
-                .company("Google")
-                .location("Bangalore / Hybrid")
+                .alumni(arunAlumni)
+                .title("Associate Backend Engineer")
+                .company("Infosys")
+                .location("Pune, India")
                 .employmentType(EmploymentType.FULL_TIME)
-                .experienceRequired("0-2 Years")
-                .requiredSkills("Java, Spring Boot, Distributed Systems, GCP")
-                .salaryRange("₹18L - ₹24L PA")
-                .description("We are looking for passionate junior engineers to join Google Cloud. You will build and scale high-throughput services with high reliability.")
-                .applicationUrl("https://careers.google.com")
+                .experienceRequired("Fresher / 0-1 Year")
+                .requiredSkills("Java, Spring Boot, REST APIs, MySQL, Git")
+                .salaryRange("₹4L - ₹6.5L PA")
+                .description("Our team in Pune is looking for fresh graduates or early-career engineers with solid Java fundamentals. " +
+                              "You'll be working on internal enterprise services. I'm happy to refer strong candidates from my college.")
+                .applicationUrl("https://infosys.com/careers")
                 .referralAvailable(true)
-                .postedDate(LocalDate.now().minusDays(3))
-                .applicationDeadline(LocalDate.now().plusDays(30))
+                .postedDate(LocalDate.now().minusDays(4))
+                .applicationDeadline(LocalDate.now().plusDays(28))
                 .isActive(true)
                 .build();
         jobRepository.save(job1);
 
         Job job2 = Job.builder()
-                .alumni(alumniProfile2)
-                .title("SDE-1 (Full Stack)")
-                .company("Amazon")
-                .location("Hyderabad, India")
+                .alumni(jenishAlumni)
+                .title("Junior Software Developer (Full Stack)")
+                .company("Zoho Corporation")
+                .location("Chennai, India")
                 .employmentType(EmploymentType.FULL_TIME)
-                .experienceRequired("Fresher / 0-1 Year")
-                .requiredSkills("Java, React, Data Structures, AWS")
-                .salaryRange("₹16L - ₹22L PA")
-                .description("Amazon Retail team is hiring fresh graduates with exceptional problem-solving and coding abilities. Happy to provide referrals for qualified candidates!")
-                .applicationUrl("https://amazon.jobs")
+                .experienceRequired("Fresher / 0-2 Years")
+                .requiredSkills("Java, React.js, SQL, REST APIs")
+                .salaryRange("₹5L - ₹8L PA")
+                .description("Zoho's CRM team is hiring developers who enjoy building real-world products used by millions. " +
+                              "We value problem-solving over competitive programming scores. Good communication and clean code matter here. " +
+                              "Drop me a message if you want to know more about the role or the team culture before applying.")
+                .applicationUrl("https://careers.zohocorp.com")
                 .referralAvailable(true)
-                .postedDate(LocalDate.now().minusDays(1))
-                .applicationDeadline(LocalDate.now().plusDays(25))
+                .postedDate(LocalDate.now().minusDays(2))
+                .applicationDeadline(LocalDate.now().plusDays(22))
                 .isActive(true)
                 .build();
         jobRepository.save(job2);
+    }
 
-        // 7. Seed Sample Events
+    private void seedEvents(User alumniOrganizer, User adminOrganizer) {
         Event event1 = Event.builder()
-                .organizer(alumniUser1)
-                .title("Cracking Google: System Design & DSA Masterclass")
-                .description("Exclusive interactive webinar for final-year students covering high-level system design, coding rounds, and behavioral preparation.")
-                .eventType(EventType.WEBINAR)
-                .eventDate(LocalDateTime.now().plusDays(7).withHour(18).withMinute(0))
-                .location("Google Meet (Online)")
-                .maxParticipants(100)
+                .organizer(alumniOrganizer)
+                .title("Placement Prep: Resume, DSA, and What Actually Matters")
+                .description("An informal session where I'll share what worked for me during campus placements and what I wish I knew earlier. " +
+                              "We'll cover resume building, DSA strategy, and how to handle HR rounds. Feel free to bring your questions.")
+                .eventType(EventType.CAREER_GUIDANCE)
+                .eventDate(LocalDateTime.now().plusDays(7).withHour(18).withMinute(30))
+                .location("Google Meet (link shared on registration)")
+                .maxParticipants(60)
                 .registrationDeadline(LocalDateTime.now().plusDays(6))
                 .isActive(true)
                 .build();
         eventRepository.save(event1);
 
         Event event2 = Event.builder()
-                .organizer(admin)
-                .title("Annual Alumni Grand Meetup 2026")
-                .description("Join over 300+ alumni on campus for networking, awards, and career guidance roundtables.")
+                .organizer(adminOrganizer)
+                .title("Alumni Homecoming – Annual Meetup 2026")
+                .description("Come back to campus, reconnect with batchmates, and meet the current students. " +
+                              "The evening includes a networking dinner, a career panel, and a few awards for outstanding alumni.")
                 .eventType(EventType.MEETUP)
                 .eventDate(LocalDateTime.now().plusDays(20).withHour(10).withMinute(0))
                 .location("Main Campus Auditorium, Block A")
-                .maxParticipants(300)
+                .maxParticipants(200)
                 .registrationDeadline(LocalDateTime.now().plusDays(18))
                 .isActive(true)
                 .build();
         eventRepository.save(event2);
+    }
 
-        // 8. Seed Sample Career Post
-        Post post1 = Post.builder()
-                .alumni(alumniProfile1)
-                .title("How I Cracked Google as a Tier-3 College Graduate")
+    private void seedPosts(AlumniProfile author) {
+        Post post = Post.builder()
+                .alumni(author)
+                .title("My Placement Journey — What I'd Tell Myself in Final Year")
                 .category(PostCategory.INTERVIEW_EXPERIENCE)
-                .content("A lot of students ask me if college tier matters for top product companies. Here is the realistic truth and the exact preparation roadmap I followed: 1) Master core DSA (Blind 75), 2) Build 1-2 non-trivial full stack projects that solve real problems, 3) Write clean, readable code with testing.")
-                .likeCount(24)
-                .commentCount(5)
+                .content("I got placed at Infosys in my final year after a lot of back and forth. I'm not going to pretend I had it all figured out. " +
+                         "I failed a couple of rounds at other companies before things clicked. A few things that actually helped: " +
+                         "practicing DSA consistently (not in one panic-sprint before the exam), doing mock interviews with friends, " +
+                         "and honestly just keeping my resume to one clean page. If you're in final year and anxious about placements, " +
+                         "feel free to reach out — I check my messages on this platform.")
+                .likeCount(18)
+                .commentCount(4)
                 .isVisible(true)
                 .build();
-        postRepository.save(post1);
-
-        logger.info("Initial seeding completed successfully!");
-        logger.info("Demo Accounts Created:");
-        logger.info("1. Admin:   admin@alumniconnect.com    | Password: Admin@123");
-        logger.info("2. Alumni:  sundar.alumni@google.com  | Password: Password@123");
-        logger.info("3. Alumni:  priya.alumni@amazon.com   | Password: Password@123");
-        logger.info("4. Student: student@alumniconnect.com | Password: Password@123");
+        postRepository.save(post);
     }
 }

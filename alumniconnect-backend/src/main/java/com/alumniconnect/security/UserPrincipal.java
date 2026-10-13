@@ -19,6 +19,7 @@ import java.util.List;
 public class UserPrincipal implements UserDetails {
 
     private Long id;
+    private String rollNumber;
     private String email;
     private String fullName;
 
@@ -27,6 +28,7 @@ public class UserPrincipal implements UserDetails {
 
     private Collection<? extends GrantedAuthority> authorities;
     private boolean active;
+    private boolean passwordChanged;
 
     public static UserPrincipal create(User user) {
         List<GrantedAuthority> authorities = Collections.singletonList(
@@ -35,11 +37,13 @@ public class UserPrincipal implements UserDetails {
 
         return UserPrincipal.builder()
                 .id(user.getId())
+                .rollNumber(user.getRollNumber())
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .password(user.getPassword())
                 .authorities(authorities)
                 .active(user.getIsActive() != null && user.getIsActive())
+                .passwordChanged(user.getPasswordChanged() != null && user.getPasswordChanged())
                 .build();
     }
 

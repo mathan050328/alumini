@@ -12,7 +12,7 @@ const CreatePostPage = () => {
   const [formData, setFormData] = useState({
     title: '',
     content: '',
-    category: Object.values(POST_CATEGORIES)[0] || 'Career Advice'
+    category: Object.keys(POST_CATEGORIES)[0] || 'CAREER_ADVICE'
   });
 
   const handleChange = (e) => {
@@ -29,9 +29,10 @@ const CreatePostPage = () => {
 
     try {
       setLoading(true);
-      const newPost = await createPost(formData);
+      const res = await createPost(formData);
+      const newPost = res.data;
       toast.success('Post created successfully!');
-      navigate(`/posts/${newPost._id || newPost.id}`);
+      navigate(`/posts/${newPost.id}`);
     } catch (error) {
       toast.error(error.message || 'Failed to create post');
     } finally {
@@ -71,7 +72,7 @@ const CreatePostPage = () => {
             )}
             
             <div className="inline-block bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-medium mb-6">
-              {formData.category}
+              {POST_CATEGORIES[formData.category] || formData.category}
             </div>
 
             <div className="prose max-w-none text-gray-800 whitespace-pre-wrap leading-relaxed">
@@ -102,8 +103,8 @@ const CreatePostPage = () => {
                 onChange={handleChange}
                 className="w-full md:w-1/2 border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-3 border"
               >
-                {Object.values(POST_CATEGORIES).map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
+                {Object.entries(POST_CATEGORIES).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
                 ))}
               </select>
             </div>

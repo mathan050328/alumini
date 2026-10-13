@@ -8,7 +8,7 @@ export const deleteJob = (id) => api.delete(`/jobs/${id}`);
 export const getMyPostedJobs = () => api.get('/jobs/my-posts');
 
 // Applications
-export const applyForJob = (data) => api.post('/applications', data);
+export const applyForJob = (jobId, data) => api.post('/applications', { jobId, ...data });
 export const getMyApplications = () => api.get('/applications/my');
 export const getJobApplications = (jobId) => api.get(`/applications/job/${jobId}`);
 export const updateApplicationStatus = (id, status) => api.patch(`/applications/${id}/status`, { status });
@@ -19,4 +19,4 @@ export const unsaveJob = (jobId) => api.delete(`/saved-jobs/${jobId}`);
 export const getSavedJobs = () => api.get('/saved-jobs');
 
 // Referrals (convenience — also in referralApi)
-export const requestReferral = (data) => api.post('/referrals', data);
+export const requestReferral = (jobId, data = {}) => api.post('/referrals', { jobId, ...data });

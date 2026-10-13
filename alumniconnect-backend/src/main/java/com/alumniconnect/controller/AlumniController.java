@@ -46,7 +46,7 @@ public class AlumniController {
             @RequestParam(required = false) Integer minExperience,
             @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) int page,
             @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_SIZE) int size,
-            @RequestParam(defaultValue = "graduationYear") String sortBy,
+            @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
 
         PagedResponse<AlumniSearchResponse> results = alumniService.searchAlumni(
@@ -93,7 +93,7 @@ public class AlumniController {
     @Operation(summary = "Remove skill from alumni profile")
     public ResponseEntity<AlumniProfileResponse> removeSkill(
             @AuthenticationPrincipal UserPrincipal currentUser,
-            @PathVariable Long skillId) {
+            @PathVariable String skillId) {
         return ResponseEntity.ok(alumniService.removeSkill(currentUser.getId(), skillId));
     }
 

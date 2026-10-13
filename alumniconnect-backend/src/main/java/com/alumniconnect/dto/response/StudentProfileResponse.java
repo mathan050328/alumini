@@ -16,6 +16,7 @@ public class StudentProfileResponse {
 
     private Long id;
     private Long userId;
+    private String rollNumber;
     private String fullName;
     private String email;
     private String profilePictureUrl;

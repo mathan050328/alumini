@@ -18,7 +18,7 @@ const NotificationsPage = () => {
   const fetchNotifications = async () => {
     try {
       setIsLoading(true);
-      const res = await getNotifications({ page, limit: 10 });
+      const res = await getNotifications({ page: Math.max(0, page - 1), size: 10 });
       const data = res.data || {};
       const list = Array.isArray(data) ? data : (data.content || data.notifications || []);
       setNotifications(list);
@@ -61,14 +61,13 @@ const NotificationsPage = () => {
   };
 
   const getIcon = (type) => {
-    switch (type?.toLowerCase()) {
-      case 'mentorship': return <FiStar className="w-5 h-5 text-yellow-500" />;
-      case 'job': return <FiBriefcase className="w-5 h-5 text-blue-500" />;
-      case 'event': return <FiCalendar className="w-5 h-5 text-green-500" />;
-      case 'message': return <FiMessageSquare className="w-5 h-5 text-indigo-500" />;
-      case 'referral': return <FiSend className="w-5 h-5 text-purple-500" />;
-      default: return <FiBell className="w-5 h-5 text-gray-500" />;
-    }
+    const t = String(type || '').toUpperCase();
+    if (t.includes('MENTORSHIP')) return <FiStar className="w-5 h-5 text-yellow-500" />;
+    if (t.includes('JOB')) return <FiBriefcase className="w-5 h-5 text-blue-500" />;
+    if (t.includes('EVENT')) return <FiCalendar className="w-5 h-5 text-green-500" />;
+    if (t.includes('MESSAGE')) return <FiMessageSquare className="w-5 h-5 text-indigo-500" />;
+    if (t.includes('REFERRAL')) return <FiSend className="w-5 h-5 text-purple-500" />;
+    return <FiBell className="w-5 h-5 text-gray-500" />;
   };
 
   return (

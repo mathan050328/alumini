@@ -14,10 +14,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.criteria.Predicate;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -62,8 +66,39 @@ public class AdminService {
 
     @Transactional(readOnly = true)
     public PagedResponse<UserResponse> getUsers(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<User> userPage = userRepository.findAll(pageable);
+        return getUsers(null, null, page, size);
+    }
+
+    @Transactional(readOnly = true)
+    public PagedResponse<UserResponse> getUsers(String search, String roleStr, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+
+        Specification<User> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (search != null && !search.isBlank()) {
+                String pattern = "%" + search.toLowerCase().trim() + "%";
+                Predicate nameMatch = cb.like(cb.lower(root.get("fullName")), pattern);
+                Predicate emailMatch = cb.like(cb.lower(root.get("email")), pattern);
+                predicates.add(cb.or(nameMatch, emailMatch));
+            }
+
+            if (roleStr != null && !roleStr.isBlank()) {
+                try {
+                    String normRole = roleStr.toUpperCase().trim();
+                    if (!normRole.startsWith("ROLE_")) {
+                        normRole = "ROLE_" + normRole;
+                    }
+                    Role roleEnum = Role.valueOf(normRole);
+                    predicates.add(cb.equal(root.get("role"), roleEnum));
+                } catch (IllegalArgumentException ignored) {
+                }
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Page<User> userPage = userRepository.findAll(spec, pageable);
 
         List<UserResponse> content = userPage.getContent().stream()
                 .map(this::mapToUserResponse)
@@ -153,11 +188,13 @@ public class AdminService {
     private UserResponse mapToUserResponse(User user) {
         return UserResponse.builder()
                 .id(user.getId())
+                .rollNumber(user.getRollNumber())
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .role(user.getRole().name())
                 .profilePictureUrl(user.getProfilePictureUrl())
                 .isActive(user.getIsActive())
+                .passwordChanged(user.getPasswordChanged())
                 .createdAt(user.getCreatedAt())
                 .build();
     }

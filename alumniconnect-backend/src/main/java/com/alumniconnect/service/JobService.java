@@ -193,10 +193,6 @@ public class JobService {
                 .collect(Collectors.toList());
     }
 
-    // ==========================================
-    // Job Applications
-    // ==========================================
-
     @Transactional
     public JobApplicationResponse applyForJob(Long studentUserId, JobApplicationRequest request) {
         StudentProfile student = studentProfileRepository.findByUserId(studentUserId)
@@ -222,7 +218,6 @@ public class JobService {
 
         application = jobApplicationRepository.save(application);
 
-        // Notify alumni
         String studentName = student.getUser().getFullName();
         notificationService.createNotification(
                 job.getAlumni().getUser().getId(),
@@ -287,10 +282,6 @@ public class JobService {
 
         return mapToApplicationResponse(application);
     }
-
-    // ==========================================
-    // Saved Jobs
-    // ==========================================
 
     @Transactional
     public void saveJob(Long studentUserId, Long jobId) {

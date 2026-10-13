@@ -61,7 +61,7 @@ const StudentDashboard = () => {
       {/* Welcome Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Welcome back, {user?.firstName || 'Student'}! 👋
+          Welcome back, {user?.fullName || user?.firstName || 'Student'}! 👋
         </h1>
         <p className="text-gray-600">
           Here's what's happening in your alumni network today.
@@ -141,38 +141,44 @@ const StudentDashboard = () => {
             
             {recommendedAlumni.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {recommendedAlumni.map((alumni) => (
-                  <div key={alumni.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex flex-col items-center text-center hover:shadow-md transition-shadow">
-                    <img 
-                      src={alumni.profilePicture || `https://ui-avatars.com/api/?name=${alumni.firstName}+${alumni.lastName}&background=random`}
-                      alt={`${alumni.firstName} ${alumni.lastName}`}
-                      className="w-20 h-20 rounded-full mb-4 object-cover border-2 border-indigo-100"
-                    />
-                    <h3 className="font-semibold text-gray-900 truncate w-full">{alumni.firstName} {alumni.lastName}</h3>
-                    <p className="text-sm text-gray-500 mb-2 truncate w-full">{alumni.jobTitle} at {alumni.company}</p>
-                    
-                    <div className="mt-2 mb-4 flex flex-wrap justify-center gap-1">
-                      {alumni.skills?.slice(0, 2).map((skill, idx) => (
-                        <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                          {skill}
-                        </span>
-                      ))}
-                      {alumni.skills?.length > 2 && (
-                        <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">+{alumni.skills.length - 2}</span>
-                      )}
-                    </div>
-                    
-                    {alumni.matchScore && (
-                      <div className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full mb-4">
-                        {alumni.matchScore}% Match
+                {recommendedAlumni.map((alumni) => {
+                  const targetAlumniId = alumni.alumniId || alumni.id || alumni.userId;
+                  const alumniSkills = Array.from(alumni.allSkills || alumni.skills || alumni.matchingSkills || []);
+                  const alumniName = alumni.fullName || `${alumni.firstName || ''} ${alumni.lastName || ''}`.trim() || 'Alumni';
+
+                  return (
+                    <div key={targetAlumniId} className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex flex-col items-center text-center hover:shadow-md transition-shadow">
+                      <img 
+                        src={alumni.profilePictureUrl || alumni.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(alumniName)}&background=random`}
+                        alt={alumniName}
+                        className="w-20 h-20 rounded-full mb-4 object-cover border-2 border-indigo-100"
+                      />
+                      <h3 className="font-semibold text-gray-900 truncate w-full">{alumniName}</h3>
+                      <p className="text-sm text-gray-500 mb-2 truncate w-full">{alumni.jobTitle} at {alumni.currentCompany || alumni.company}</p>
+                      
+                      <div className="mt-2 mb-4 flex flex-wrap justify-center gap-1">
+                        {alumniSkills.slice(0, 2).map((skill, idx) => (
+                          <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                            {skill}
+                          </span>
+                        ))}
+                        {alumniSkills.length > 2 && (
+                          <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">+{alumniSkills.length - 2}</span>
+                        )}
                       </div>
-                    )}
-                    
-                    <Link to={`/alumni/${alumni.id}`} className="mt-auto w-full block text-center border border-indigo-600 text-indigo-600 hover:bg-indigo-50 font-medium py-2 rounded-lg transition-colors text-sm">
-                      View Profile
-                    </Link>
-                  </div>
-                ))}
+                      
+                      {alumni.matchScore && (
+                        <div className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full mb-4">
+                          {alumni.matchScore}% Match
+                        </div>
+                      )}
+                      
+                      <Link to={`/alumni/${targetAlumniId}`} className="mt-auto w-full block text-center border border-indigo-600 text-indigo-600 hover:bg-indigo-50 font-medium py-2 rounded-lg transition-colors text-sm">
+                        View Profile
+                      </Link>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center text-gray-500">
@@ -234,23 +240,32 @@ const StudentDashboard = () => {
             
             {upcomingEvents.length > 0 ? (
               <div className="space-y-6">
-                {upcomingEvents.map((event) => (
-                  <div key={event.id} className="flex gap-4 group">
-                    <div className="bg-indigo-50 rounded-lg p-3 flex flex-col items-center justify-center text-indigo-700 min-w-[60px] h-[60px]">
-                      <span className="text-xs font-bold uppercase">{new Date(event.date).toLocaleDateString('en-US', { month: 'short' })}</span>
-                      <span className="text-lg font-bold">{new Date(event.date).getDate()}</span>
+                {upcomingEvents.map((event) => {
+                  const eventDateObj = new Date(event.eventDate || event.date || Date.now());
+                  const isValidDate = !isNaN(eventDateObj.getTime());
+
+                  return (
+                    <div key={event.id} className="flex gap-4 group">
+                      <div className="bg-indigo-50 rounded-lg p-3 flex flex-col items-center justify-center text-indigo-700 min-w-[60px] h-[60px]">
+                        <span className="text-xs font-bold uppercase">
+                          {isValidDate ? eventDateObj.toLocaleDateString('en-US', { month: 'short' }) : 'EVENT'}
+                        </span>
+                        <span className="text-lg font-bold">
+                          {isValidDate ? eventDateObj.getDate() : '•'}
+                        </span>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                          <Link to={`/events/${event.id}`}>{event.title}</Link>
+                        </h3>
+                        <p className="text-sm text-gray-500 mt-1 line-clamp-1">{event.location || event.platform || 'Virtual'}</p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {isValidDate ? eventDateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : ''}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
-                        <Link to={`/events/${event.id}`}>{event.title}</Link>
-                      </h3>
-                      <p className="text-sm text-gray-500 mt-1 line-clamp-1">{event.location || event.platform}</p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {new Date(event.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
                 <Link to="/events" className="block text-center w-full py-2 mt-4 text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-lg transition-colors">
                   View full calendar
                 </Link>

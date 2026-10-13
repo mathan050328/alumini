@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FiSearch, FiFilter, FiMapPin, FiBriefcase, FiClock, FiBookmark, FiCalendar, FiDollarSign, FiPlus } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
-import { searchJobs, saveJob, unsaveJob } from '../../api/jobApi';
+import { searchJobs, saveJob, unsaveJob, getMyPostedJobs } from '../../api/jobApi';
 import { EMPLOYMENT_TYPES, ROLES } from '../../utils/constants';
 import { formatTimeAgo, formatDate } from '../../utils/formatters';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -15,6 +15,10 @@ const JobListPage = () => {
   const { user, isAuthenticated, hasRole } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const isAlumni = isAuthenticated && (hasRole(ROLES.ALUMNI) || user?.role?.includes('ALUMNI'));
+  const isAlumniPath = location.pathname.includes('/alumni/jobs');
+  const [viewMode, setViewMode] = useState(isAlumniPath ? 'my' : 'all');
 
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,14 +44,24 @@ const JobListPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await searchJobs({
-        page: currentPage,
-        limit,
-        ...filters
-      });
-      setJobs(response.data.jobs || []);
-      setTotalPages(response.data.totalPages || 1);
-      setTotalJobs(response.data.totalJobs || 0);
+      if (viewMode === 'my') {
+        const response = await getMyPostedJobs();
+        const list = Array.isArray(response.data) ? response.data : (response.data?.content || []);
+        setJobs(list);
+        setTotalPages(1);
+        setTotalJobs(list.length);
+      } else {
+        const response = await searchJobs({
+          page: currentPage - 1, // backend is 0-indexed
+          size: limit,
+          ...filters
+        });
+        const data = response.data || {};
+        const list = Array.isArray(data) ? data : (data.content || data.jobs || []);
+        setJobs(list);
+        setTotalPages(data.totalPages || 1);
+        setTotalJobs(data.totalElements || data.totalJobs || list.length);
+      }
     } catch (err) {
       console.error('Error fetching jobs:', err);
       setError('Failed to load jobs. Please try again later.');
@@ -55,7 +69,7 @@ const JobListPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, limit, filters]);
+  }, [currentPage, limit, filters, viewMode]);
 
   useEffect(() => {
     fetchJobs();
@@ -106,7 +120,7 @@ const JobListPage = () => {
       
       // Update local state
       setJobs(prevJobs => prevJobs.map(job => {
-        if (job._id === jobId) {
+        if (job.id === jobId) {
           return { ...job, isSaved: !isSaved };
         }
         return job;
@@ -139,6 +153,34 @@ const JobListPage = () => {
           </Link>
         )}
       </div>
+
+      {/* Alumni View Mode Tabs */}
+      {isAlumni && (
+        <div className="flex border-b border-gray-200 mb-6 gap-2">
+          <button
+            type="button"
+            onClick={() => { setViewMode('all'); setCurrentPage(1); }}
+            className={`py-3 px-5 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
+              viewMode === 'all'
+                ? 'border-indigo-600 text-indigo-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            All Opportunities
+          </button>
+          <button
+            type="button"
+            onClick={() => { setViewMode('my'); setCurrentPage(1); }}
+            className={`py-3 px-5 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
+              viewMode === 'my'
+                ? 'border-indigo-600 text-indigo-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            My Job Postings
+          </button>
+        </div>
+      )}
 
       {/* Search and Filters */}
       <div className="bg-white rounded-lg shadow-md p-4 mb-8">
@@ -278,8 +320,8 @@ const JobListPage = () => {
         <div className="space-y-4">
           {jobs.map((job) => (
             <Link 
-              key={job._id} 
-              to={`/jobs/${job._id}`}
+              key={job.id} 
+              to={`/jobs/${job.id}`}
               className="block bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow overflow-hidden"
             >
               <div className="p-6">
@@ -314,7 +356,7 @@ const JobListPage = () => {
                         <Badge text="Applied" color="success" size="sm" />
                       )}
                       <button
-                        onClick={(e) => handleSaveJob(e, job._id, job.isSaved)}
+                        onClick={(e) => handleSaveJob(e, job.id, job.isSaved)}
                         className={`p-2 rounded-full hover:bg-gray-100 transition-colors ${
                           job.isSaved ? 'text-indigo-600' : 'text-gray-400 hover:text-gray-600'
                         }`}
@@ -322,6 +364,18 @@ const JobListPage = () => {
                       >
                         <FiBookmark className={`h-5 w-5 ${job.isSaved ? 'fill-current' : ''}`} />
                       </button>
+                    </div>
+                  )}
+
+                  {isAlumni && (viewMode === 'my' || job.alumniId === user?.id || job.postedBy?.userId === user?.id) && (
+                    <div className="ml-4 flex-shrink-0 flex items-center space-x-2">
+                      <Link
+                        to={`/alumni/jobs/${job.id}/applications`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center px-3 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-lg border border-indigo-200 transition-colors"
+                      >
+                        View Applicants
+                      </Link>
                     </div>
                   )}
                 </div>

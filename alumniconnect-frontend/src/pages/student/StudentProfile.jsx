@@ -51,7 +51,24 @@ const StudentProfile = () => {
 
   if (!profile) return null;
 
-  const initials = `${profile.firstName?.charAt(0) || ''}${profile.lastName?.charAt(0) || ''}`;
+  const displayName = profile.fullName || `${profile.firstName || ''} ${profile.lastName || ''}`.trim() || 'Student';
+  const displayAvatar = profile.profilePictureUrl || profile.profilePicture;
+  const initials = displayName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(n => n.charAt(0).toUpperCase())
+    .join('') || 'ST';
+
+  const skillsList = Array.isArray(profile.skills) 
+    ? profile.skills 
+    : (profile.skills ? Array.from(profile.skills) : []);
+
+  const careerInterestsList = Array.isArray(profile.careerInterests)
+    ? profile.careerInterests
+    : (typeof profile.careerInterests === 'string' && profile.careerInterests.trim()
+        ? profile.careerInterests.split(',').map(s => s.trim()).filter(Boolean)
+        : []);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
@@ -61,10 +78,10 @@ const StudentProfile = () => {
         <div className="px-8 pb-8 relative">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end -mt-16 mb-4">
             <div className="flex items-end">
-              {profile.profilePicture ? (
+              {displayAvatar ? (
                 <img 
-                  src={profile.profilePicture} 
-                  alt={`${profile.firstName} ${profile.lastName}`} 
+                  src={displayAvatar} 
+                  alt={displayName} 
                   className="w-32 h-32 rounded-full border-4 border-white object-cover shadow-md bg-white"
                 />
               ) : (
@@ -73,7 +90,14 @@ const StudentProfile = () => {
                 </div>
               )}
               <div className="ml-6 mb-2">
-                <h1 className="text-3xl font-bold text-gray-900">{profile.firstName} {profile.lastName}</h1>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-3xl font-bold text-gray-900">{displayName}</h1>
+                  {profile.rollNumber && (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 font-mono">
+                      Roll No: {profile.rollNumber}
+                    </span>
+                  )}
+                </div>
                 <p className="text-lg text-gray-600 font-medium">{profile.department} • {profile.degree}</p>
                 <p className="text-gray-500">Class of {profile.graduationYear}</p>
               </div>
@@ -221,9 +245,9 @@ const StudentProfile = () => {
           {/* Skills */}
           <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg font-bold text-gray-900 mb-4">Skills</h2>
-            {profile.skills && profile.skills.length > 0 ? (
+            {skillsList && skillsList.length > 0 ? (
               <div className="flex flex-wrap gap-2">
-                {profile.skills.map((skill, idx) => (
+                {skillsList.map((skill, idx) => (
                   <Badge key={idx} variant="info">{skill}</Badge>
                 ))}
               </div>
@@ -235,9 +259,9 @@ const StudentProfile = () => {
           {/* Career Interests */}
           <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg font-bold text-gray-900 mb-4">Career Interests</h2>
-            {profile.careerInterests && profile.careerInterests.length > 0 ? (
+            {careerInterestsList && careerInterestsList.length > 0 ? (
               <div className="flex flex-wrap gap-2">
-                {profile.careerInterests.map((interest, idx) => (
+                {careerInterestsList.map((interest, idx) => (
                   <Badge key={idx} variant="secondary" className="bg-purple-100 text-purple-700">{interest}</Badge>
                 ))}
               </div>

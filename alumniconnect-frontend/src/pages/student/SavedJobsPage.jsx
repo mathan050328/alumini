@@ -21,7 +21,9 @@ const SavedJobsPage = () => {
   const fetchSavedJobs = async () => {
     try {
       const response = await getSavedJobs();
-      setSavedJobs(response.data.jobs || []);
+      const data = response.data || {};
+      const list = Array.isArray(data) ? data : (data.content || data.jobs || []);
+      setSavedJobs(list);
     } catch (err) {
       console.error('Error fetching saved jobs:', err);
       setError('Failed to load saved jobs. Please try again later.');
@@ -37,7 +39,7 @@ const SavedJobsPage = () => {
     
     try {
       await unsaveJob(jobId);
-      setSavedJobs(savedJobs.filter(job => job._id !== jobId));
+      setSavedJobs(savedJobs.filter(job => job.id !== jobId));
       toast.success('Job removed from saved list');
     } catch (err) {
       toast.error('Failed to remove job');
@@ -83,15 +85,15 @@ const SavedJobsPage = () => {
           icon={FiBookmark}
           action={{
             label: "Browse Jobs",
-            onClick: () => window.location.href = '/jobs'
+            link: "/jobs"
           }}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {savedJobs.map((job) => (
             <Link
-              key={job._id}
-              to={`/jobs/${job._id}`}
+              key={job.id}
+              to={`/jobs/${job.id}`}
               className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full"
             >
               <div className="p-5 flex-grow">
@@ -100,7 +102,7 @@ const SavedJobsPage = () => {
                     {job.title}
                   </h3>
                   <button
-                    onClick={(e) => handleRemove(e, job._id)}
+                    onClick={(e) => handleRemove(e, job.id)}
                     className="text-gray-400 hover:text-red-500 transition-colors p-1"
                     title="Remove from saved"
                   >

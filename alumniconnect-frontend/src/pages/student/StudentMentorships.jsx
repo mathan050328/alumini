@@ -113,8 +113,13 @@ const StudentMentorships = () => {
       {filteredMentorships.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredMentorships.map(mentorship => {
-            const alumni = mentorship.alumni; // Assuming API returns alumni details
-            const alumniName = alumni ? `${alumni.firstName} ${alumni.lastName}` : 'Unknown Alumni';
+            const alumni = mentorship.alumni;
+            const alumniName = mentorship.alumniName || (alumni ? `${alumni.firstName} ${alumni.lastName}` : 'Mentor');
+            const alumniAvatar = mentorship.alumniProfilePictureUrl || alumni?.profilePicture;
+            const alumniTitle = mentorship.alumniJobTitle || alumni?.jobTitle;
+            const alumniCompany = mentorship.alumniCompany || alumni?.company;
+            const alumniProfileId = mentorship.alumniId || alumni?.id;
+            const targetUserId = mentorship.alumniUserId || mentorship.alumniId || alumni?.userId || alumni?.id;
             
             return (
               <div key={mentorship.id} className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
@@ -122,19 +127,21 @@ const StudentMentorships = () => {
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center">
                       <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold mr-4 shrink-0 overflow-hidden">
-                        {alumni?.profilePicture ? (
-                          <img src={alumni.profilePicture} alt={alumniName} className="w-full h-full object-cover" />
+                        {alumniAvatar ? (
+                          <img src={alumniAvatar} alt={alumniName} className="w-full h-full object-cover" />
                         ) : (
                           <span>{alumniName.charAt(0)}</span>
                         )}
                       </div>
                       <div>
                         <h3 className="font-semibold text-gray-900">
-                          {alumni ? (
-                            <Link to={`/alumni/${alumni.id}`} className="hover:text-indigo-600">{alumniName}</Link>
+                          {alumniProfileId ? (
+                            <Link to={`/alumni/${alumniProfileId}`} className="hover:text-indigo-600">{alumniName}</Link>
                           ) : alumniName}
                         </h3>
-                        <p className="text-sm text-gray-500 line-clamp-1">{alumni?.jobTitle} at {alumni?.company}</p>
+                        <p className="text-sm text-gray-500 line-clamp-1">
+                          {alumniTitle ? `${alumniTitle} ` : ''}{alumniCompany ? `at ${alumniCompany}` : 'Alumni'}
+                        </p>
                       </div>
                     </div>
                     <Badge variant={getStatusBadgeVariant(mentorship.status)}>
@@ -148,11 +155,11 @@ const StudentMentorships = () => {
                   
                   <div className="flex flex-col space-y-2 text-xs text-gray-500">
                     <div className="flex items-center">
-                      <FiCalendar className="mr-2" /> Requested on: {formatDate(mentorship.createdAt || new Date())}
+                      <FiCalendar className="mr-2" /> Requested on: {formatDate(mentorship.requestedAt || mentorship.createdAt || new Date())}
                     </div>
-                    {mentorship.updatedAt && mentorship.updatedAt !== mentorship.createdAt && (
+                    {mentorship.respondedAt && (
                       <div className="flex items-center">
-                        <FiClock className="mr-2" /> Last updated: {formatDate(mentorship.updatedAt)}
+                        <FiClock className="mr-2" /> Responded on: {formatDate(mentorship.respondedAt)}
                       </div>
                     )}
                   </div>
@@ -161,7 +168,7 @@ const StudentMentorships = () => {
                 {/* Actions Footer */}
                 <div className="bg-gray-50 px-6 py-3 border-t border-gray-100 flex justify-end gap-3">
                   {mentorship.status === 'ACCEPTED' && (
-                    <Link to={`/messages?userId=${alumni?.id}`} className="flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
+                    <Link to={`/messages?userId=${targetUserId}`} className="flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
                       <FiMessageSquare className="mr-2" /> Message Mentor
                     </Link>
                   )}

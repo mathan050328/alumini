@@ -1,4 +1,4 @@
-# 📡 AlumniConnect — REST API Specification
+# AlumniConnect REST API Specification
 
 Base URL: `/api`  
 Swagger UI (Local): `http://localhost:8080/swagger-ui/index.html`  

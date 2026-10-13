@@ -36,4 +36,13 @@ public class AuthController {
         AuthResponse response = authService.login(request);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/change-password")
+    @Operation(summary = "Change password on first login or profile settings")
+    public ResponseEntity<Void> changePassword(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.alumniconnect.security.UserPrincipal currentUser,
+            @Valid @RequestBody com.alumniconnect.dto.request.ChangePasswordRequest request) {
+        authService.changePassword(currentUser.getId(), request.getCurrentPassword(), request.getNewPassword());
+        return ResponseEntity.ok().build();
+    }
 }

@@ -10,7 +10,7 @@ const CreateEventPage = () => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    eventType: Object.values(EVENT_TYPES)[0] || 'Workshop',
+    eventType: Object.keys(EVENT_TYPES)[0] || 'WORKSHOP',
     eventDate: '',
     location: '',
     maxParticipants: '',
@@ -89,8 +89,8 @@ const CreateEventPage = () => {
                 onChange={handleChange}
                 className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-2 border"
               >
-                {Object.values(EVENT_TYPES).map(type => (
-                  <option key={type} value={type}>{type}</option>
+                {Object.entries(EVENT_TYPES).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
                 ))}
               </select>
             </div>

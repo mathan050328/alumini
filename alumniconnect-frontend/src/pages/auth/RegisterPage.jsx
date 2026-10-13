@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 const RegisterPage = () => {
   const [formData, setFormData] = useState({
     name: '',
+    rollNumber: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -18,6 +19,7 @@ const RegisterPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [passwordStrength, setPasswordStrength] = useState(0);
+  const [legalModal, setLegalModal] = useState({ open: false, title: '', type: '' });
 
   const { register, user } = useAuth();
   const navigate = useNavigate();
@@ -83,8 +85,18 @@ const RegisterPage = () => {
 
     try {
       setIsLoading(true);
-      const { confirmPassword, ...registerData } = formData;
-      await register(registerData);
+      const roleMapped = formData.role?.toUpperCase().startsWith('ROLE_') 
+        ? formData.role.toUpperCase() 
+        : `ROLE_${formData.role?.toUpperCase() || 'STUDENT'}`;
+      
+      const payload = {
+        fullName: formData.name,
+        rollNumber: formData.rollNumber?.trim() || undefined,
+        email: formData.email,
+        password: formData.password,
+        role: roleMapped
+      };
+      await register(payload);
       toast.success('Registration successful! Please sign in.');
       navigate('/login');
     } catch (err) {
@@ -185,6 +197,29 @@ const RegisterPage = () => {
                   placeholder="John Doe"
                 />
               </div>
+            </div>
+
+            <div>
+              <label htmlFor="rollNumber" className="block text-sm font-medium text-gray-700">
+                College Roll Number / Registration ID
+              </label>
+              <div className="mt-1 relative rounded-md shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FiUser className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="rollNumber"
+                  name="rollNumber"
+                  type="text"
+                  value={formData.rollNumber}
+                  onChange={handleChange}
+                  className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2 border uppercase"
+                  placeholder="e.g. 21CS101 or 18IT045"
+                />
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Permanent institutional ID assigned by your college.
+              </p>
             </div>
 
             <div>
@@ -290,7 +325,22 @@ const RegisterPage = () => {
             </div>
 
             <div className="text-sm text-gray-500">
-              By creating an account, you agree to our <a href="#" className="text-indigo-600 hover:underline">Terms of Service</a> and <a href="#" className="text-indigo-600 hover:underline">Privacy Policy</a>.
+              By creating an account, you agree to our{' '}
+              <button
+                type="button"
+                onClick={() => setLegalModal({ open: true, title: 'Terms of Service', type: 'terms' })}
+                className="text-indigo-600 hover:underline bg-transparent border-0 cursor-pointer p-0 font-medium"
+              >
+                Terms of Service
+              </button>{' '}
+              and{' '}
+              <button
+                type="button"
+                onClick={() => setLegalModal({ open: true, title: 'Privacy Policy', type: 'privacy' })}
+                className="text-indigo-600 hover:underline bg-transparent border-0 cursor-pointer p-0 font-medium"
+              >
+                Privacy Policy
+              </button>.
             </div>
 
             <div>
@@ -315,6 +365,54 @@ const RegisterPage = () => {
           </form>
         </div>
       </div>
+
+      {/* Legal Modal */}
+      {legalModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 max-h-[85vh] flex flex-col">
+            <div className="flex justify-between items-center pb-3 border-b border-gray-100">
+              <h3 className="text-xl font-bold text-gray-900">{legalModal.title}</h3>
+              <button
+                onClick={() => setLegalModal({ open: false, title: '', type: '' })}
+                className="text-gray-400 hover:text-gray-600 text-lg p-1"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="py-4 overflow-y-auto text-sm text-gray-600 space-y-3 leading-relaxed">
+              {legalModal.type === 'terms' ? (
+                <>
+                  <p>Welcome to <strong>AlumniConnect</strong>. By creating an account or accessing any services, you agree to follow our code of conduct and community standards.</p>
+                  <h4 className="font-semibold text-gray-900">1. Eligibility & Authenticity</h4>
+                  <p>Only verified alumni, current students, and authorized faculty/administrators of the institution are permitted to register and interact.</p>
+                  <h4 className="font-semibold text-gray-900">2. Professional Conduct</h4>
+                  <p>All mentorship requests, referrals, and discussions must remain respectful, professional, and free of solicitation or harassment.</p>
+                  <h4 className="font-semibold text-gray-900">3. Moderation & Termination</h4>
+                  <p>Administrators reserve the right to suspend or remove any account that violates platform integrity, publishes deceptive job listings, or breaches university policies.</p>
+                </>
+              ) : (
+                <>
+                  <p>Your privacy is of the utmost importance to <strong>AlumniConnect</strong>.</p>
+                  <h4 className="font-semibold text-gray-900">1. Information We Collect</h4>
+                  <p>We collect names, university email addresses, graduation years, academic departments, work history, and uploaded resumes to provide personalized mentorship matching and career referrals.</p>
+                  <h4 className="font-semibold text-gray-900">2. How Data is Shared</h4>
+                  <p>Your profile data is strictly visible to verified students and registered alumni within the platform network. We never sell or license personal data to third-party advertisers.</p>
+                  <h4 className="font-semibold text-gray-900">3. Security & Control</h4>
+                  <p>All passwords are encrypted using bcrypt hashing, and authenticated sessions are safeguarded by cryptographically signed JWT tokens.</p>
+                </>
+              )}
+            </div>
+            <div className="pt-3 border-t border-gray-100 flex justify-end">
+              <button
+                onClick={() => setLegalModal({ open: false, title: '', type: '' })}
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-lg transition-colors"
+              >
+                Understood
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

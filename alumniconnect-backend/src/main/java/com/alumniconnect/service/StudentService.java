@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -67,6 +68,18 @@ public class StudentService {
         if (request.getLinkedinUrl() != null) profile.setLinkedinUrl(request.getLinkedinUrl());
         if (request.getCareerInterests() != null) profile.setCareerInterests(request.getCareerInterests());
 
+        if (request.getSkills() != null) {
+            Set<Skill> newSkills = new HashSet<>();
+            for (String rawName : request.getSkills()) {
+                String name = rawName.trim();
+                if (name.isEmpty()) continue;
+                Skill skill = skillRepository.findByNameIgnoreCase(name)
+                        .orElseGet(() -> skillRepository.save(Skill.builder().name(name).build()));
+                newSkills.add(skill);
+            }
+            profile.setSkills(newSkills);
+        }
+
         profile = studentProfileRepository.save(profile);
         return mapToResponse(profile);
     }
@@ -89,13 +102,20 @@ public class StudentService {
     }
 
     @Transactional
-    public StudentProfileResponse removeSkill(Long userId, Long skillId) {
+    public StudentProfileResponse removeSkill(Long userId, String skillIdentifier) {
         StudentProfile profile = studentProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("StudentProfile", "userId", userId));
 
-        profile.getSkills().removeIf(skill -> skill.getId().equals(skillId));
+        profile.getSkills().removeIf(skill ->
+                skill.getName().equalsIgnoreCase(skillIdentifier) ||
+                String.valueOf(skill.getId()).equals(skillIdentifier));
         profile = studentProfileRepository.save(profile);
         return mapToResponse(profile);
+    }
+
+    @Transactional
+    public StudentProfileResponse removeSkill(Long userId, Long skillId) {
+        return removeSkill(userId, String.valueOf(skillId));
     }
 
     @Transactional
@@ -188,6 +208,7 @@ public class StudentService {
         return StudentProfileResponse.builder()
                 .id(profile.getId())
                 .userId(user.getId())
+                .rollNumber(user.getRollNumber())
                 .fullName(user.getFullName())
                 .email(user.getEmail())
                 .profilePictureUrl(user.getProfilePictureUrl())

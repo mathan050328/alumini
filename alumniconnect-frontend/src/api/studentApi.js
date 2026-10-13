@@ -7,7 +7,26 @@ export const addStudentSkills = (skills) => api.post('/students/profile/skills',
 export const removeStudentSkill = (skillId) => api.delete(`/students/profile/skills/${skillId}`);
 export const addStudentProject = (data) => api.post('/students/profile/projects', data);
 export const removeStudentProject = (projectId) => api.delete(`/students/profile/projects/${projectId}`);
-export const uploadProfilePicture = (formData) => api.post('/students/profile/picture', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-export const uploadResume = (formData) => api.post('/students/profile/resume', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+const buildFormData = (file) => {
+  if (file instanceof FormData) return file;
+  const formData = new FormData();
+  formData.append('file', file);
+  return formData;
+};
+
+export const uploadProfilePicture = (file) =>
+  api.post('/students/profile/picture', buildFormData(file), {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+
+export const uploadResume = (file) =>
+  api.post('/students/profile/resume', buildFormData(file), {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+
 export const getStudentDashboard = () => api.get('/students/dashboard');
-export const getRecommendedAlumni = (limit = 6) => api.get(`/students/recommended-alumni?limit=${limit}`);
+
+export const getRecommendedAlumni = (params = 6) => {
+  const limit = typeof params === 'object' && params?.limit ? params.limit : params;
+  return api.get(`/students/recommended-alumni?limit=${limit}`);
+};

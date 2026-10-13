@@ -56,11 +56,18 @@ const StudentReferrals = () => {
           icon={FiBriefcase} 
           title="No referrals requested" 
           message="You haven't requested any job referrals yet. Go to jobs or alumni profiles to request a referral." 
+          action={{ label: "Browse Jobs", link: "/jobs" }}
         />
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {referrals.map((referral) => {
             const id = referral.id || referral._id;
+            const alumniName = referral.alumniName || referral.alumni?.name || 'Alumni';
+            const companyName = referral.jobCompany || referral.company || referral.alumniCompany;
+            const reqDate = referral.requestedAt || referral.createdAt;
+            const resumeUrl = referral.studentResumeUrl || referral.resumeUrl;
+            const avatarUrl = referral.alumniProfilePictureUrl || referral.alumni?.profilePicture;
+            
             return (
               <div key={id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
                 <div className="p-5 flex-1">
@@ -70,31 +77,33 @@ const StudentReferrals = () => {
                     </Badge>
                     <span className="text-xs text-gray-500 flex items-center">
                       <FiClock className="mr-1 w-3 h-3" />
-                      {formatDate(referral.createdAt)}
+                      {formatDate(reqDate)}
                     </span>
                   </div>
                   
                   <div className="mb-4">
                     <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">{referral.jobTitle}</h3>
-                    <p className="text-indigo-600 font-medium text-sm flex items-center mt-1">
-                      <FiBriefcase className="mr-1.5 w-4 h-4" />
-                      {referral.company}
-                    </p>
+                    {companyName && (
+                      <p className="text-indigo-600 font-medium text-sm flex items-center mt-1">
+                        <FiBriefcase className="mr-1.5 w-4 h-4" />
+                        {companyName}
+                      </p>
+                    )}
                   </div>
                   
                   <div className="py-3 border-t border-gray-100 mt-4">
                     <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2">Requested From</p>
                     <div className="flex items-center">
-                      {referral.alumni?.profilePicture ? (
-                        <img src={referral.alumni.profilePicture} alt={referral.alumni.name} className="w-8 h-8 rounded-full mr-2 object-cover" />
+                      {avatarUrl ? (
+                        <img src={avatarUrl} alt={alumniName} className="w-8 h-8 rounded-full mr-2 object-cover" />
                       ) : (
-                        <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold mr-2">
-                          {referral.alumni?.name?.charAt(0) || 'A'}
+                        <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold mr-2 text-sm">
+                          {alumniName.charAt(0)}
                         </div>
                       )}
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{referral.alumni?.name}</p>
-                        <p className="text-xs text-gray-500">{referral.alumni?.currentPosition || 'Alumni'}</p>
+                        <p className="text-sm font-medium text-gray-900">{alumniName}</p>
+                        <p className="text-xs text-gray-500">{referral.alumniCompany || referral.alumni?.currentPosition || 'Alumni'}</p>
                       </div>
                     </div>
                   </div>
@@ -105,10 +114,10 @@ const StudentReferrals = () => {
                     </div>
                   )}
 
-                  {referral.resumeUrl && (
+                  {resumeUrl && (
                     <div className="mt-4">
                       <a 
-                        href={referral.resumeUrl} 
+                        href={resumeUrl} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="inline-flex items-center text-sm text-indigo-600 hover:text-indigo-800 font-medium"

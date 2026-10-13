@@ -1,5 +1,6 @@
 package com.alumniconnect.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
@@ -8,10 +9,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class StudentProfileRequest {
 
     @Size(max = 20, message = "Phone number cannot exceed 20 characters")
@@ -34,4 +38,6 @@ public class StudentProfileRequest {
     private String linkedinUrl;
 
     private String careerInterests;
+
+    private List<String> skills;
 }

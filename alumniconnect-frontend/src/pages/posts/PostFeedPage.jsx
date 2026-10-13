@@ -11,7 +11,7 @@ import EmptyState from '../../components/common/EmptyState';
 import Pagination from '../../components/common/Pagination';
 import { FiMessageSquare, FiHeart, FiEdit, FiUser } from 'react-icons/fi';
 
-const CATEGORY_TABS = ['All', ...Object.values(POST_CATEGORIES)];
+const CATEGORY_TABS = ['All', ...Object.keys(POST_CATEGORIES)];
 
 const PostFeedPage = () => {
   const [posts, setPosts] = useState([]);
@@ -26,7 +26,8 @@ const PostFeedPage = () => {
   const fetchPosts = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await getPosts({ category: categoryFilter, page, limit: 10 });
+      const categoryFilter = activeCategory !== 'All' ? activeCategory : undefined;
+      const res = await getPosts({ category: categoryFilter, page: Math.max(0, page - 1), size: 10 });
       const data = res.data || {};
       const list = Array.isArray(data) ? data : (data.content || data.posts || []);
       setPosts(list);
@@ -53,11 +54,16 @@ const PostFeedPage = () => {
         await likePost(postId);
       }
       setPosts(currentPosts => currentPosts.map(post => {
-        if ((post._id || post.id) === postId) {
-          const newLikes = isLiked 
-            ? post.likes.filter(id => id !== user.id)
-            : [...(post.likes || []), user.id];
-          return { ...post, likes: newLikes };
+        if (post.id === postId) {
+          const currentCount = post.likeCount ?? (post.likes?.length || 0);
+          return {
+            ...post,
+            isLikedByCurrentUser: !isLiked,
+            likeCount: isLiked ? Math.max(0, currentCount - 1) : currentCount + 1,
+            likes: isLiked 
+              ? (post.likes || []).filter(id => id !== user?.id)
+              : [...(post.likes || []), user?.id]
+          };
         }
         return post;
       }));
@@ -66,14 +72,14 @@ const PostFeedPage = () => {
     }
   };
 
-  const canWritePost = hasRole(ROLES.ALUMNI);
+  const canWritePost = hasRole(ROLES.ALUMNI) || hasRole(ROLES.ADMIN) || user?.role?.includes('ALUMNI');
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Knowledge Hub</h1>
-          <p className="text-gray-600 mt-1">Share and discover insights, tips, and experiences.</p>
+          <p className="text-gray-600 mt-1">Share and discover insights, tips, and experiences from alumni.</p>
         </div>
         {canWritePost && (
           <Link to="/posts/create" className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-sm">
@@ -83,17 +89,17 @@ const PostFeedPage = () => {
       </div>
 
       <div className="flex overflow-x-auto pb-4 mb-6 gap-2 hide-scrollbar">
-        {CATEGORY_TABS.map(category => (
+        {CATEGORY_TABS.map(catKey => (
           <button
-            key={category}
-            onClick={() => { setActiveCategory(category); setPage(1); }}
+            key={catKey}
+            onClick={() => { setActiveCategory(catKey); setPage(1); }}
             className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              activeCategory === category 
+              activeCategory === catKey 
                 ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' 
                 : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
             }`}
           >
-            {category}
+            {catKey === 'All' ? 'All' : (POST_CATEGORIES[catKey] || catKey)}
           </button>
         ))}
       </div>
@@ -101,13 +107,19 @@ const PostFeedPage = () => {
       {loading ? (
         <LoadingSpinner />
       ) : posts.length === 0 ? (
-        <EmptyState message="No posts found in this category yet." icon={FiMessageSquare} />
+        <EmptyState 
+          title="No posts found"
+          message="No articles or discussions have been posted in this category yet." 
+          icon={FiMessageSquare} 
+        />
       ) : (
         <div className="space-y-6">
           {posts.map(post => {
-            const postId = post._id || post.id;
-            const isLiked = post.likes?.includes(user?.id);
-            const author = post.author || {};
+            const postId = post.id;
+            const isLiked = post.isLikedByCurrentUser ?? post.likes?.includes(user?.id);
+            const authorName = post.alumniName || post.author?.name || 'Anonymous User';
+            const authorImage = post.alumniProfilePictureUrl || post.author?.profileImage;
+            const authorCompany = post.alumniCompany || post.author?.company || (post.alumniJobTitle ? post.alumniJobTitle : 'Alumni');
             
             return (
               <div 
@@ -117,21 +129,21 @@ const PostFeedPage = () => {
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    {author.profileImage ? (
-                      <img src={author.profileImage} alt={author.name} className="w-10 h-10 rounded-full object-cover" />
+                    {authorImage ? (
+                      <img src={authorImage} alt={authorName} className="w-10 h-10 rounded-full object-cover" />
                     ) : (
                       <div className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center">
                         <FiUser className="w-5 h-5" />
                       </div>
                     )}
                     <div>
-                      <h3 className="font-semibold text-gray-900 text-sm">{author.name || 'Anonymous User'}</h3>
+                      <h3 className="font-semibold text-gray-900 text-sm">{authorName}</h3>
                       <p className="text-xs text-gray-500">
-                        {author.company ? `${author.company}` : 'Alumni'} • {formatTimeAgo(post.createdAt)}
+                        {authorCompany} • {formatTimeAgo(post.createdAt)}
                       </p>
                     </div>
                   </div>
-                  <Badge variant="secondary">{post.category}</Badge>
+                  <Badge variant="secondary">{POST_CATEGORIES[post.category] || post.category}</Badge>
                 </div>
 
                 <h2 className="text-xl font-bold text-gray-900 mb-2">{post.title}</h2>
@@ -147,11 +159,11 @@ const PostFeedPage = () => {
                     }`}
                   >
                     <FiHeart className={isLiked ? 'fill-current' : ''} />
-                    <span>{post.likes?.length || 0} Likes</span>
+                    <span>{post.likeCount ?? post.likes?.length ?? 0} Likes</span>
                   </button>
                   <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
                     <FiMessageSquare />
-                    <span>{post.comments?.length || 0} Comments</span>
+                    <span>{post.commentCount ?? post.comments?.length ?? 0} Comments</span>
                   </div>
                 </div>
               </div>

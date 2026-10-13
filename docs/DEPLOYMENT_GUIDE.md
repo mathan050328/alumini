@@ -1,10 +1,10 @@
-# 🚀 AlumniConnect — AWS Cloud Production Deployment Guide
+# AlumniConnect Production Deployment Guide
 
-This guide details the step-by-step production architecture and deployment lifecycle for **AlumniConnect** across **AWS EC2, AWS RDS (MySQL), AWS S3, and AWS CloudWatch**.
+This document outlines the production infrastructure and deployment steps for **AlumniConnect** on AWS EC2, RDS (MySQL), S3, and CloudWatch.
 
 ---
 
-## 🏛️ Production Cloud Architecture
+## Production Cloud Architecture
 
 ```
                                       Internet

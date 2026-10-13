@@ -28,27 +28,27 @@ export const REFERRAL_STATUS = {
   COMPLETED: 'COMPLETED'
 };
 
-export const EMPLOYMENT_TYPES = [
-  { value: 'FULL_TIME', label: 'Full Time' },
-  { value: 'PART_TIME', label: 'Part Time' },
-  { value: 'INTERNSHIP', label: 'Internship' },
-  { value: 'CONTRACT', label: 'Contract' },
-  { value: 'REMOTE', label: 'Remote' }
-];
+export const EMPLOYMENT_TYPES = {
+  FULL_TIME: 'Full Time',
+  PART_TIME: 'Part Time',
+  INTERNSHIP: 'Internship',
+  CONTRACT: 'Contract',
+  REMOTE: 'Remote'
+};
 
-export const EVENT_TYPES = [
-  { value: 'MEETUP', label: 'Alumni Meetup' },
-  { value: 'WORKSHOP', label: 'Workshop' },
-  { value: 'CAREER_GUIDANCE', label: 'Career Guidance' },
-  { value: 'MOCK_INTERVIEW', label: 'Mock Interview' },
-  { value: 'WEBINAR', label: 'Webinar' },
-  { value: 'NETWORKING', label: 'Networking' }
-];
+export const EVENT_TYPES = {
+  MEETUP: 'Alumni Meetup',
+  WORKSHOP: 'Workshop',
+  CAREER_GUIDANCE: 'Career Guidance',
+  MOCK_INTERVIEW: 'Mock Interview',
+  WEBINAR: 'Webinar',
+  NETWORKING: 'Networking'
+};
 
-export const POST_CATEGORIES = [
-  { value: 'INTERVIEW_EXPERIENCE', label: 'Interview Experience' },
-  { value: 'CAREER_ADVICE', label: 'Career Advice' },
-  { value: 'TECHNICAL_ARTICLE', label: 'Technical Article' },
-  { value: 'RESUME_TIPS', label: 'Resume Tips' },
-  { value: 'INDUSTRY_INSIGHTS', label: 'Industry Insights' }
-];
+export const POST_CATEGORIES = {
+  INTERVIEW_EXPERIENCE: 'Interview Experience',
+  CAREER_ADVICE: 'Career Advice',
+  TECHNICAL_ARTICLE: 'Technical Article',
+  RESUME_TIPS: 'Resume Tips',
+  INDUSTRY_INSIGHTS: 'Industry Insights'
+};

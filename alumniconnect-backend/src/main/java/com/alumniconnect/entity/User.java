@@ -28,6 +28,9 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "roll_number", unique = true, length = 50)
+    private String rollNumber;
+
     @Column(nullable = false, unique = true, length = 150)
     private String email;
 
@@ -47,6 +50,10 @@ public class User {
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     private Boolean isActive = true;
+
+    @Column(name = "password_changed", nullable = false)
+    @Builder.Default
+    private Boolean passwordChanged = false;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

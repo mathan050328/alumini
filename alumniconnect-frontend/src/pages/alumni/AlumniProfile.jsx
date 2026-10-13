@@ -29,11 +29,21 @@ const AlumniProfile = () => {
     }
   };
 
+  const isAvailable = profile?.mentorshipAvailability === 'AVAILABLE' || profile?.isAvailableForMentorship;
+
   const handleToggleAvailability = async () => {
     try {
       setUpdating(true);
-      await updateAlumniProfile({ isAvailableForMentorship: !profile.isAvailableForMentorship });
-      setProfile({ ...profile, isAvailableForMentorship: !profile.isAvailableForMentorship });
+      const newAvailability = isAvailable ? 'NOT_AVAILABLE' : 'AVAILABLE';
+      await updateAlumniProfile({ 
+        mentorshipAvailability: newAvailability,
+        isAvailableForMentorship: !isAvailable 
+      });
+      setProfile({ 
+        ...profile, 
+        mentorshipAvailability: newAvailability,
+        isAvailableForMentorship: !isAvailable 
+      });
       toast.success('Mentorship availability updated');
     } catch (error) {
       toast.error('Failed to update availability');
@@ -53,21 +63,48 @@ const AlumniProfile = () => {
         <div className="px-6 pb-6 relative">
           <div className="flex justify-between items-end mb-4">
             <div className="-mt-16 flex items-center">
-              <img
-                src={profile.avatar || 'https://via.placeholder.com/128'}
-                alt={profile.name}
-                className="w-32 h-32 rounded-full border-4 border-white bg-white object-cover"
-              />
+              {profile.profilePictureUrl || profile.avatar ? (
+                <img
+                  src={profile.profilePictureUrl || profile.avatar}
+                  alt={profile.fullName || profile.name}
+                  className="w-32 h-32 rounded-full border-4 border-white bg-white object-cover shadow-md"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    if (e.currentTarget.nextSibling) {
+                      e.currentTarget.nextSibling.style.display = 'flex';
+                    }
+                  }}
+                />
+              ) : null}
+              <div
+                className={`w-32 h-32 rounded-full border-4 border-white bg-indigo-600 text-white font-bold text-3xl items-center justify-center shadow-md ${
+                  profile.profilePictureUrl || profile.avatar ? 'hidden' : 'flex'
+                }`}
+              >
+                {(profile.fullName || profile.name || 'Alumni')
+                  .split(' ')
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .map(n => n.charAt(0).toUpperCase())
+                  .join('') || 'AL'}
+              </div>
             </div>
-            <Link to="/alumni/profile/edit" className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+            <Link to="/alumni/profile/edit" className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 shadow-sm transition-colors">
               <FiEdit /> Edit Profile
             </Link>
           </div>
           
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              {profile.name}
-              {profile.isVerified && <FiCheckCircle className="text-blue-500 w-5 h-5" title="Verified" />}
+            <h1 className="text-2xl font-bold text-gray-900 flex flex-wrap items-center gap-2">
+              {profile.fullName || profile.name}
+              {(profile.verificationStatus === 'VERIFIED' || profile.isVerified) && (
+                <FiCheckCircle className="text-blue-500 w-5 h-5" title="Verified" />
+              )}
+              {profile.rollNumber && (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 font-mono">
+                  Alumni ID: {profile.rollNumber}
+                </span>
+              )}
             </h1>
             <p className="text-lg text-gray-600 font-medium mt-1">
               {profile.jobTitle} {profile.currentCompany && `at ${profile.currentCompany}`}
@@ -135,8 +172,8 @@ const AlumniProfile = () => {
             <h2 className="text-lg font-bold text-gray-900 mb-3">Mentorship</h2>
             <div className="flex items-center justify-between">
               <span className="text-gray-700">Status</span>
-              <Badge variant={profile.isAvailableForMentorship ? 'success' : 'secondary'}>
-                {profile.isAvailableForMentorship ? 'Available' : 'Unavailable'}
+              <Badge variant={isAvailable ? 'success' : 'secondary'}>
+                {isAvailable ? 'Available' : 'Unavailable'}
               </Badge>
             </div>
             <button

@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   FiHome, FiUser, FiUsers, FiBriefcase, FiCalendar,
   FiMessageSquare, FiBell, FiFileText, FiStar, FiBookmark,
-  FiUserCheck, FiBarChart2, FiShield, FiSend
+  FiUserCheck, FiSend
 } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import { ROLES } from '../../utils/constants';
@@ -34,8 +34,9 @@ const Sidebar = ({ isOpen, onClose }) => {
         return [
           { icon: FiHome, label: 'Dashboard', path: '/alumni/dashboard' },
           { icon: FiUser, label: 'My Profile', path: '/alumni/profile' },
+          { icon: FiUsers, label: 'Alumni Directory', path: '/alumni-directory' },
           { icon: FiStar, label: 'Mentorships', path: '/alumni/mentorships' },
-          { icon: FiBriefcase, label: 'My Jobs', path: '/alumni/jobs' },
+          { icon: FiBriefcase, label: 'Jobs & My Postings', path: '/alumni/jobs' },
           { icon: FiSend, label: 'Referrals', path: '/alumni/referrals' },
           { icon: FiCalendar, label: 'Events', path: '/events' },
           { icon: FiFileText, label: 'Posts', path: '/posts' },
@@ -47,11 +48,11 @@ const Sidebar = ({ isOpen, onClose }) => {
           { icon: FiHome, label: 'Dashboard', path: '/admin/dashboard' },
           { icon: FiUsers, label: 'Users', path: '/admin/users' },
           { icon: FiUserCheck, label: 'Verification', path: '/admin/verification' },
+          { icon: FiUsers, label: 'Alumni Directory', path: '/alumni-directory' },
           { icon: FiBriefcase, label: 'Jobs', path: '/jobs' },
           { icon: FiCalendar, label: 'Events', path: '/events' },
           { icon: FiFileText, label: 'Posts', path: '/posts' },
-          { icon: FiBarChart2, label: 'Reports', path: '/admin/reports' },
-          { icon: FiShield, label: 'Settings', path: '/admin/settings' },
+          { icon: FiBell, label: 'Notifications', path: '/notifications' },
         ];
       default:
         return [];

@@ -6,6 +6,8 @@ import { formatDateTime } from '../../utils/formatters';
 import { toast } from 'react-toastify';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Badge from '../../components/common/Badge';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
+import EventRegistrationModal from '../../components/events/EventRegistrationModal';
 import { FiCalendar, FiMapPin, FiUsers, FiClock, FiShare2, FiUser, FiMail } from 'react-icons/fi';
 
 const EventDetailPage = () => {
@@ -14,6 +16,9 @@ const EventDetailPage = () => {
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isRegModalOpen, setIsRegModalOpen] = useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [isSubmittingReg, setIsSubmittingReg] = useState(false);
 
   const fetchEvent = async () => {
     try {
@@ -32,18 +37,39 @@ const EventDetailPage = () => {
     fetchEvent();
   }, [id]);
 
-  const handleRegister = async (isRegistered) => {
+  const handleRegisterClick = () => {
+    if (isRegistered) {
+      setIsCancelDialogOpen(true);
+    } else {
+      setIsRegModalOpen(true);
+    }
+  };
+
+  const handleConfirmRegistration = async () => {
     try {
-      if (isRegistered) {
-        await cancelEventRegistration(id);
-        toast.success('Successfully unregistered');
-      } else {
-        await registerForEvent(id);
-        toast.success('Successfully registered');
-      }
+      setIsSubmittingReg(true);
+      await registerForEvent(id);
+      toast.success('Registration confirmed! You are registered for this event.');
+      setIsRegModalOpen(false);
       fetchEvent();
     } catch (err) {
-      toast.error(err.message || 'Action failed');
+      toast.error(err.response?.data?.message || err.message || 'Registration failed');
+    } finally {
+      setIsSubmittingReg(false);
+    }
+  };
+
+  const handleConfirmCancel = async () => {
+    try {
+      setIsSubmittingReg(true);
+      await cancelEventRegistration(id);
+      toast.success('Successfully unregistered from event');
+      setIsCancelDialogOpen(false);
+      fetchEvent();
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to cancel registration');
+    } finally {
+      setIsSubmittingReg(false);
     }
   };
 
@@ -56,9 +82,10 @@ const EventDetailPage = () => {
   if (error || !event) return <div className="text-center py-8 text-red-600">{error || 'Event not found'}</div>;
 
   const isPast = new Date(event.eventDate) < new Date();
-  const isRegistered = event.registeredParticipants?.some(p => p._id === user?.id || p === user?.id) || event.isRegistered;
-  const isFull = event.registeredParticipants?.length >= event.maxParticipants;
-  const isOrganizer = event.organizer?._id === user?.id || event.organizer === user?.id;
+  const isRegistered = event.isRegistered || event.registeredParticipants?.some(p => (p.id || p._id || p) === user?.id);
+  const registeredCount = event.registeredCount ?? event.registeredParticipants?.length ?? 0;
+  const isFull = event.maxParticipants && registeredCount >= event.maxParticipants;
+  const isOrganizer = event.organizerId === user?.id || (event.organizer?.id || event.organizer?._id || event.organizer) === user?.id;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -90,7 +117,7 @@ const EventDetailPage = () => {
             </div>
             <div className="flex items-center gap-3 text-gray-600">
               <FiUsers className="w-5 h-5 text-indigo-500" />
-              <span>{event.registeredParticipants?.length || 0} / {event.maxParticipants} Participants</span>
+              <span>{registeredCount} / {event.maxParticipants || 'Unlimited'} Participants</span>
             </div>
             <div className="flex items-center gap-3 text-gray-600">
               <FiClock className="w-5 h-5 text-indigo-500" />
@@ -118,9 +145,9 @@ const EventDetailPage = () => {
                     <FiUser className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">{event.organizer?.name || 'Unknown'}</p>
-                    {event.organizer?.email && (
-                      <a href={`mailto:${event.organizer.email}`} className="text-sm text-indigo-600 hover:underline flex items-center gap-1">
+                    <p className="font-medium text-gray-900">{event.organizerName || event.organizer?.name || 'Unknown'}</p>
+                    {(event.organizerEmail || event.organizer?.email) && (
+                      <a href={`mailto:${event.organizerEmail || event.organizer?.email}`} className="text-sm text-indigo-600 hover:underline flex items-center gap-1">
                         <FiMail className="w-4 h-4" /> Contact
                       </a>
                     )}
@@ -132,20 +159,26 @@ const EventDetailPage = () => {
               {!isPast && !isOrganizer && (
                 <div className="bg-gray-50 rounded-lg p-6">
                   <button
-                    onClick={() => handleRegister(isRegistered)}
+                    onClick={handleRegisterClick}
                     disabled={!isRegistered && isFull}
-                    className={`w-full py-3 px-4 rounded-lg font-medium text-center transition-colors ${
+                    className={`w-full py-3 px-4 rounded-lg font-medium text-center transition-colors cursor-pointer ${
                       isRegistered 
-                        ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                        ? 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200' 
                         : isFull 
                           ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                           : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md'
                     }`}
                   >
-                    {isRegistered ? 'Cancel Registration' : isFull ? 'Event is Full' : 'Register Now'}
+                    {isRegistered ? 'Cancel Registration' : isFull ? 'Event is Full' : 'Register for Event'}
                   </button>
                   {isRegistered && (
-                    <p className="text-sm text-center text-green-600 mt-2 font-medium">You are registered for this event.</p>
+                    <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg text-xs text-green-800 space-y-1">
+                      <p className="font-semibold flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-green-600"></span>
+                        Registration Confirmed
+                      </p>
+                      <p className="text-gray-600">You are registered for this event. Reminders will be sent before start time.</p>
+                    </div>
                   )}
                 </div>
               )}
@@ -164,7 +197,7 @@ const EventDetailPage = () => {
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Registered Participants</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {event.registeredParticipants.map((p, index) => (
-                <div key={p._id || index} className="flex items-center gap-3 bg-white p-3 rounded-md shadow-sm border">
+                <div key={p.id || p._id || index} className="flex items-center gap-3 bg-white p-3 rounded-md shadow-sm border">
                   <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
                     <FiUser className="text-gray-500" />
                   </div>
@@ -175,6 +208,28 @@ const EventDetailPage = () => {
           </div>
         )}
       </div>
+
+      {/* Event Registration Details Modal */}
+      <EventRegistrationModal
+        isOpen={isRegModalOpen}
+        onClose={() => setIsRegModalOpen(false)}
+        event={event}
+        user={user}
+        onConfirm={handleConfirmRegistration}
+        isSubmitting={isSubmittingReg}
+      />
+
+      {/* Cancel Registration Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={isCancelDialogOpen}
+        onClose={() => setIsCancelDialogOpen(false)}
+        onConfirm={handleConfirmCancel}
+        title="Cancel Event Registration"
+        message={`Are you sure you want to cancel your registration for "${event.title}"? Your spot will be released.`}
+        confirmText="Yes, Cancel Registration"
+        confirmVariant="danger"
+        isLoading={isSubmittingReg}
+      />
     </div>
   );
 };

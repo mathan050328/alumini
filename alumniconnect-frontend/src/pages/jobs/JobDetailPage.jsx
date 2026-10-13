@@ -53,11 +53,11 @@ const JobDetailPage = () => {
 
     try {
       if (job.isSaved) {
-        await unsaveJob(job._id);
+        await unsaveJob(job.id);
         setJob({ ...job, isSaved: false });
         toast.success('Job removed from saved list');
       } else {
-        await saveJob(job._id);
+        await saveJob(job.id);
         setJob({ ...job, isSaved: true });
         toast.success('Job saved successfully');
       }
@@ -80,7 +80,7 @@ const JobDetailPage = () => {
 
     setIsApplying(true);
     try {
-      await applyForJob(job._id, { coverLetter });
+      await applyForJob(job.id, { coverLetter });
       toast.success('Application submitted successfully!');
       setJob({ ...job, hasApplied: true });
       setShowApplyModal(false);
@@ -99,7 +99,10 @@ const JobDetailPage = () => {
 
     setIsRequestingReferral(true);
     try {
-      await requestReferral(job._id);
+      await requestReferral(job.id, { 
+        alumniId: job.alumniId, 
+        message: 'I am interested in this role and would appreciate your referral.' 
+      });
       toast.success('Referral request sent successfully!');
       setJob({ ...job, hasRequestedReferral: true });
     } catch (err) {
@@ -136,7 +139,7 @@ const JobDetailPage = () => {
     );
   }
 
-  const isPoster = isAuthenticated && user?._id === job.postedBy?._id;
+  const isPoster = isAuthenticated && (user?.id === job.alumniUserId || user?.id === job.alumniId || user?.id === job.postedBy?.userId);
   const isCloseToDeadline = job.applicationDeadline && new Date(job.applicationDeadline) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
   return (
@@ -212,7 +215,7 @@ const JobDetailPage = () => {
 
               {isPoster && (
                 <Link
-                  to={`/alumni/jobs/${job._id}/applications`}
+                  to={`/alumni/jobs/${job.id}/applications`}
                   className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
                 >
                   <FiUser className="mr-2 -ml-1 h-4 w-4" />
@@ -265,47 +268,65 @@ const JobDetailPage = () => {
               {job.description}
             </div>
 
-            {job.skills && job.skills.length > 0 && (
-              <div className="mt-8">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Required Skills</h3>
-                <div className="flex flex-wrap gap-2">
-                  {job.skills.map((skill, index) => (
-                    <span 
-                      key={index}
-                      className="px-3 py-1 bg-gray-100 text-gray-800 text-sm font-medium rounded-full"
-                    >
-                      {skill}
-                    </span>
-                  ))}
+            {(() => {
+              const skillsList = Array.isArray(job.skills) 
+                ? job.skills 
+                : (job.requiredSkills ? job.requiredSkills.split(',').map(s => s.trim()).filter(Boolean) : []);
+              if (skillsList.length === 0) return null;
+              return (
+                <div className="mt-8">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Required Skills</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {skillsList.map((skill, index) => (
+                      <span 
+                        key={index}
+                        className="px-3 py-1 bg-gray-100 text-gray-800 text-sm font-medium rounded-full"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           {/* Sidebar */}
           <div className="p-6 md:p-8 lg:w-80 bg-gray-50">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Posted By</h3>
-            <div className="flex items-center mb-6">
-              {job.postedBy?.profilePicture ? (
-                <img 
-                  src={job.postedBy.profilePicture} 
-                  alt={job.postedBy.name} 
-                  className="h-12 w-12 rounded-full object-cover mr-4"
-                />
-              ) : (
-                <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center mr-4">
-                  <span className="text-indigo-600 font-bold text-lg">
-                    {job.postedBy?.name?.charAt(0) || 'A'}
-                  </span>
+            {(() => {
+              const posterName = job.alumniName || job.postedBy?.fullName || job.postedBy?.name || 'Alumni Member';
+              const posterAvatar = job.alumniProfilePictureUrl || job.postedBy?.profilePicture;
+              const posterId = job.alumniId || job.postedBy?.id;
+
+              return (
+                <div className="flex items-center mb-6">
+                  {posterAvatar ? (
+                    <img 
+                      src={posterAvatar} 
+                      alt={posterName} 
+                      className="h-12 w-12 rounded-full object-cover mr-4"
+                    />
+                  ) : (
+                    <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center mr-4">
+                      <span className="text-indigo-600 font-bold text-lg">
+                        {posterName.charAt(0) || 'A'}
+                      </span>
+                    </div>
+                  )}
+                  <div>
+                    {posterId ? (
+                      <Link to={`/alumni/${posterId}`} className="font-medium text-indigo-600 hover:text-indigo-800">
+                        {posterName}
+                      </Link>
+                    ) : (
+                      <span className="font-medium text-gray-900">{posterName}</span>
+                    )}
+                    <p className="text-sm text-gray-500">{job.alumniCompany || 'Alumni'}</p>
+                  </div>
                 </div>
-              )}
-              <div>
-                <Link to={`/profile/${job.postedBy?._id}`} className="font-medium text-indigo-600 hover:text-indigo-800">
-                  {job.postedBy?.name || 'Alumni Member'}
-                </Link>
-                <p className="text-sm text-gray-500">Alumni</p>
-              </div>
-            </div>
+              );
+            })()}
 
             {job.referralAvailable && (
               <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-100">

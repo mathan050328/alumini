@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -77,6 +78,18 @@ public class AlumniService {
         if (request.getLinkedinUrl() != null) profile.setLinkedinUrl(request.getLinkedinUrl());
         if (request.getMentorshipAvailability() != null) profile.setMentorshipAvailability(request.getMentorshipAvailability());
 
+        if (request.getSkills() != null) {
+            Set<Skill> newSkills = new HashSet<>();
+            for (String rawName : request.getSkills()) {
+                String name = rawName.trim();
+                if (name.isEmpty()) continue;
+                Skill skill = skillRepository.findByNameIgnoreCase(name)
+                        .orElseGet(() -> skillRepository.save(Skill.builder().name(name).build()));
+                newSkills.add(skill);
+            }
+            profile.setSkills(newSkills);
+        }
+
         profile = alumniProfileRepository.save(profile);
         return mapToResponse(profile);
     }
@@ -99,13 +112,20 @@ public class AlumniService {
     }
 
     @Transactional
-    public AlumniProfileResponse removeSkill(Long userId, Long skillId) {
+    public AlumniProfileResponse removeSkill(Long userId, String skillIdentifier) {
         AlumniProfile profile = alumniProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("AlumniProfile", "userId", userId));
 
-        profile.getSkills().removeIf(skill -> skill.getId().equals(skillId));
+        profile.getSkills().removeIf(skill ->
+                skill.getName().equalsIgnoreCase(skillIdentifier) ||
+                String.valueOf(skill.getId()).equals(skillIdentifier));
         profile = alumniProfileRepository.save(profile);
         return mapToResponse(profile);
+    }
+
+    @Transactional
+    public AlumniProfileResponse removeSkill(Long userId, Long skillId) {
+        return removeSkill(userId, String.valueOf(skillId));
     }
 
     @Transactional
@@ -181,12 +201,14 @@ public class AlumniService {
         Specification<AlumniProfile> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            // Only VERIFIED alumni should be visible in search
-            predicates.add(cb.equal(root.get("verificationStatus"), VerificationStatus.VERIFIED));
+            Join<AlumniProfile, User> userJoin = root.join("user", JoinType.INNER);
+
+            // All registered active alumni are visible to students (exclude only rejected)
+            predicates.add(cb.isTrue(userJoin.get("isActive")));
+            predicates.add(cb.notEqual(root.get("verificationStatus"), VerificationStatus.REJECTED));
 
             if (keyword != null && !keyword.isBlank()) {
                 String pattern = "%" + keyword.toLowerCase().trim() + "%";
-                Join<AlumniProfile, User> userJoin = root.join("user", JoinType.LEFT);
                 Predicate nameMatch = cb.like(cb.lower(userJoin.get("fullName")), pattern);
                 Predicate companyMatch = cb.like(cb.lower(root.get("currentCompany")), pattern);
                 Predicate titleMatch = cb.like(cb.lower(root.get("jobTitle")), pattern);
@@ -206,7 +228,7 @@ public class AlumniService {
             }
 
             if (department != null && !department.isBlank()) {
-                predicates.add(cb.equal(cb.lower(root.get("department")), department.toLowerCase().trim()));
+                predicates.add(cb.like(cb.lower(root.get("department")), "%" + department.toLowerCase().trim() + "%"));
             }
 
             if (graduationYear != null) {
@@ -297,6 +319,7 @@ public class AlumniService {
         return AlumniProfileResponse.builder()
                 .id(profile.getId())
                 .userId(user.getId())
+                .rollNumber(user.getRollNumber())
                 .fullName(user.getFullName())
                 .email(user.getEmail())
                 .profilePictureUrl(user.getProfilePictureUrl())

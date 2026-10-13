@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FiBriefcase, FiUser, FiClock, FiCheck, FiX, FiAward, FiFileText, FiExternalLink } from 'react-icons/fi';
+import { FiBriefcase, FiUser, FiClock, FiCheck, FiX, FiAward, FiFileText, FiExternalLink, FiMessageSquare } from 'react-icons/fi';
 import { getReceivedReferrals, acceptReferral, rejectReferral, completeReferral } from '../../api/referralApi';
 import { formatDate } from '../../utils/formatters';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -116,22 +117,29 @@ const AlumniReferrals = () => {
             const id = referral.id || referral._id;
             const isPending = referral.status === REFERRAL_STATUS.PENDING;
             const isAccepted = referral.status === REFERRAL_STATUS.ACCEPTED;
+            const studentName = referral.studentName || referral.student?.name || 'Student';
+            const studentEmail = referral.studentEmail || referral.student?.email || '';
+            const reqDate = referral.requestedAt || referral.createdAt;
+            const companyName = referral.jobCompany || referral.company || 'Company';
+            const resumeUrl = referral.studentResumeUrl || referral.resumeUrl;
+            const avatarUrl = referral.studentProfilePictureUrl || referral.student?.profilePicture;
+            const studentUserId = referral.studentUserId || referral.studentId || referral.student?.id;
 
             return (
               <div key={id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col md:flex-row">
                 <div className="p-6 flex-1">
                   <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-4 gap-4">
                     <div className="flex items-center">
-                      {referral.student?.profilePicture ? (
-                        <img src={referral.student.profilePicture} alt={referral.student.name} className="w-12 h-12 rounded-full mr-4 object-cover border border-gray-200" />
+                      {avatarUrl ? (
+                        <img src={avatarUrl} alt={studentName} className="w-12 h-12 rounded-full mr-4 object-cover border border-gray-200" />
                       ) : (
                         <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold mr-4 text-lg">
-                          {referral.student?.name?.charAt(0) || 'S'}
+                          {studentName.charAt(0)}
                         </div>
                       )}
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">{referral.student?.name}</h3>
-                        <p className="text-sm text-gray-500">{referral.student?.email}</p>
+                        <h3 className="text-lg font-semibold text-gray-900">{studentName}</h3>
+                        {studentEmail && <p className="text-sm text-gray-500">{studentEmail}</p>}
                       </div>
                     </div>
                     
@@ -141,7 +149,7 @@ const AlumniReferrals = () => {
                       </Badge>
                       <span className="text-xs text-gray-500 flex items-center">
                         <FiClock className="mr-1 w-3 h-3" />
-                        Requested on {formatDate(referral.createdAt)}
+                        Requested on {formatDate(reqDate)}
                       </span>
                     </div>
                   </div>
@@ -154,7 +162,7 @@ const AlumniReferrals = () => {
                           <FiBriefcase className="mr-1.5 w-4 h-4 text-indigo-500" />
                           {referral.jobTitle}
                         </p>
-                        <p className="text-sm text-gray-600 mt-1">at {referral.company}</p>
+                        <p className="text-sm text-gray-600 mt-1">at {companyName}</p>
                         
                         {referral.jobUrl && (
                           <a 
@@ -170,9 +178,9 @@ const AlumniReferrals = () => {
                       
                       <div>
                         <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Student Assets</p>
-                        {referral.resumeUrl ? (
+                        {resumeUrl ? (
                           <a 
-                            href={referral.resumeUrl} 
+                            href={resumeUrl} 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="inline-flex items-center text-sm text-indigo-600 hover:text-indigo-800 font-medium py-1 px-3 bg-indigo-50 rounded-md border border-indigo-100"
@@ -204,14 +212,14 @@ const AlumniReferrals = () => {
                       <>
                         <button
                           onClick={() => handleActionClick('accept', id)}
-                          className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                          className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer"
                         >
                           <FiCheck className="mr-2 -ml-1 h-4 w-4" />
                           Accept Request
                         </button>
                         <button
                           onClick={() => handleActionClick('reject', id)}
-                          className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                          className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer"
                         >
                           <FiX className="mr-2 -ml-1 h-4 w-4 text-red-500" />
                           Decline
@@ -220,13 +228,24 @@ const AlumniReferrals = () => {
                     )}
                     
                     {isAccepted && (
-                      <button
-                        onClick={() => handleActionClick('complete', id)}
-                        className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                      >
-                        <FiAward className="mr-2 -ml-1 h-4 w-4" />
-                        Mark Completed
-                      </button>
+                      <div className="space-y-3 w-full">
+                        {studentUserId && (
+                          <Link
+                            to={`/messages?userId=${studentUserId}`}
+                            className="w-full inline-flex justify-center items-center px-4 py-2 border border-indigo-600 text-sm font-medium rounded-md text-indigo-600 bg-white hover:bg-indigo-50 transition-colors"
+                          >
+                            <FiMessageSquare className="mr-2 -ml-1 h-4 w-4" />
+                            Message Student
+                          </Link>
+                        )}
+                        <button
+                          onClick={() => handleActionClick('complete', id)}
+                          className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 cursor-pointer"
+                        >
+                          <FiAward className="mr-2 -ml-1 h-4 w-4" />
+                          Mark Completed
+                        </button>
+                      </div>
                     )}
                   </div>
                 )}

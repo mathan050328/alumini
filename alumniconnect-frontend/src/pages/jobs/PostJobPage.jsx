@@ -71,6 +71,7 @@ const PostJobPage = () => {
     try {
       const jobData = {
         ...formData,
+        requiredSkills: skills.length > 0 ? skills.join(', ') : (formData.requiredSkills || ''),
         skills
       };
       

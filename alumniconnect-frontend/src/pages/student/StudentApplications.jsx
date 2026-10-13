@@ -18,7 +18,9 @@ const StudentApplications = () => {
     const fetchApplications = async () => {
       try {
         const response = await getMyApplications();
-        setApplications(response.data.applications || []);
+        const data = response.data || {};
+        const list = Array.isArray(data) ? data : (data.content || data.applications || []);
+        setApplications(list);
       } catch (err) {
         console.error('Error fetching applications:', err);
         setError('Failed to load your applications. Please try again later.');
@@ -78,7 +80,7 @@ const StudentApplications = () => {
           icon={FiBriefcase}
           action={{
             label: "Browse Jobs",
-            onClick: () => window.location.href = '/jobs'
+            link: "/jobs"
           }}
         />
       ) : (
@@ -87,31 +89,32 @@ const StudentApplications = () => {
             {applications.map((app) => {
               const statusConfig = getStatusConfig(app.status);
               const StatusIcon = statusConfig.icon;
-              const job = app.job;
-              
-              if (!job) return null; // Fallback if job got deleted
+              const jobId = app.jobId || app.job?.id || app.job?._id;
+              const jobTitle = app.jobTitle || app.job?.title || 'Job Opportunity';
+              const jobCompany = app.jobCompany || app.job?.company || 'Company';
+              const appliedDate = app.appliedAt || app.createdAt;
 
               return (
-                <li key={app._id}>
+                <li key={app.id}>
                   <div className="px-4 py-4 sm:px-6 hover:bg-gray-50 transition-colors">
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4">
                         <Link 
-                          to={`/jobs/${job._id}`}
+                          to={jobId ? `/jobs/${jobId}` : '#'}
                           className="text-lg font-medium text-indigo-600 truncate hover:text-indigo-800"
                         >
-                          {job.title}
+                          {jobTitle}
                         </Link>
                         <div className="mt-2 sm:mt-0 flex flex-wrap gap-2">
-                          <Badge text={statusConfig.label} color={statusConfig.color} />
+                          <Badge variant={statusConfig.color} text={statusConfig.label} />
                         </div>
                       </div>
                       <div className="ml-2 flex-shrink-0 flex">
                         <button
-                          onClick={() => setSelectedApp(selectedApp === app._id ? null : app._id)}
-                          className="text-sm text-gray-500 hover:text-gray-700 underline"
+                          onClick={() => setSelectedApp(selectedApp === app.id ? null : app.id)}
+                          className="text-sm text-gray-500 hover:text-gray-700 underline cursor-pointer"
                         >
-                          {selectedApp === app._id ? 'Hide Details' : 'View Cover Letter'}
+                          {selectedApp === app.id ? 'Hide Details' : 'View Cover Letter'}
                         </button>
                       </div>
                     </div>
@@ -120,27 +123,29 @@ const StudentApplications = () => {
                       <div className="sm:flex sm:space-x-6 text-sm text-gray-500">
                         <p className="flex items-center">
                           <FiBriefcase className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
-                          {job.company}
+                          {jobCompany}
                         </p>
                         <p className="mt-2 sm:mt-0 flex items-center">
                           <FiCalendar className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
-                          Applied on {formatDate(app.createdAt)}
+                          Applied on {formatDate(appliedDate)}
                         </p>
                       </div>
                       
                       <div className="mt-2 sm:mt-0 text-sm">
-                        <Link 
-                          to={`/jobs/${job._id}`}
-                          className="flex items-center text-indigo-600 hover:text-indigo-900"
-                        >
-                          View Job Post
-                          <FiExternalLink className="ml-1 h-3 w-3" />
-                        </Link>
+                        {jobId && (
+                          <Link 
+                            to={`/jobs/${jobId}`}
+                            className="flex items-center text-indigo-600 hover:text-indigo-900"
+                          >
+                            View Job Post
+                            <FiExternalLink className="ml-1 h-3 w-3" />
+                          </Link>
+                        )}
                       </div>
                     </div>
                     
                     {/* Expanded Cover Letter View */}
-                    {selectedApp === app._id && app.coverLetter && (
+                    {selectedApp === app.id && app.coverLetter && (
                       <div className="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200">
                         <h4 className="text-sm font-medium text-gray-900 mb-2 flex items-center">
                           <FiFileText className="mr-2 text-gray-500" />

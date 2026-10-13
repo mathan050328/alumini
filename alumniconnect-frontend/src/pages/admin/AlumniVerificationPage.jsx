@@ -23,6 +23,7 @@ const AlumniVerificationPage = () => {
   const fetchPendingAlumni = async () => {
     setLoading(true);
     try {
+      const response = await getPendingAlumni();
       const data = response.data || [];
       setPendingAlumni(Array.isArray(data) ? data : (data.content || []));
     } catch (error) {
@@ -44,18 +45,19 @@ const AlumniVerificationPage = () => {
     
     setActionLoading(true);
     try {
-      const alumniId = selectedAlumni._id || selectedAlumni.id;
+      const alumniId = selectedAlumni.id;
       
+      const alumniName = selectedAlumni.fullName || selectedAlumni.user?.fullName || selectedAlumni.user?.firstName || 'Alumni Member';
       if (actionType === 'verify') {
         await verifyAlumni(alumniId);
-        toast.success(`Alumni profile for ${selectedAlumni.user?.firstName || 'User'} verified successfully`);
+        toast.success(`Alumni profile for ${alumniName} verified successfully`);
       } else if (actionType === 'reject') {
         await rejectAlumni(alumniId);
-        toast.success(`Alumni profile rejected`);
+        toast.success(`Alumni profile for ${alumniName} rejected`);
       }
       
       // Remove from list
-      setPendingAlumni(pendingAlumni.filter(a => (a._id || a.id) !== alumniId));
+      setPendingAlumni(pendingAlumni.filter(a => a.id !== alumniId));
       
     } catch (error) {
       toast.error(`Failed to ${actionType} alumni`);
@@ -90,25 +92,28 @@ const AlumniVerificationPage = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {pendingAlumni.map((alumni) => {
-            const user = alumni.user || {};
+            const displayName = alumni.fullName || alumni.user?.fullName || `${alumni.user?.firstName || ''} ${alumni.user?.lastName || ''}`.trim() || 'Alumni Member';
+            const displayEmail = alumni.email || alumni.user?.email || 'No email provided';
+            const avatarUrl = alumni.profilePictureUrl || alumni.user?.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random`;
+
             return (
               <div 
-                key={alumni._id || alumni.id} 
+                key={alumni.id} 
                 className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col"
               >
                 <div className="p-6 flex-grow">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-3">
                       <img 
-                        src={user.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent((user.firstName || '') + ' ' + (user.lastName || ''))}`} 
-                        alt="Profile" 
-                        className="w-12 h-12 rounded-full object-cover"
+                        src={avatarUrl} 
+                        alt={displayName} 
+                        className="w-12 h-12 rounded-full object-cover border border-gray-200"
                       />
                       <div>
                         <h3 className="text-lg font-bold text-gray-900">
-                          {user.firstName} {user.lastName}
+                          {displayName}
                         </h3>
-                        <p className="text-sm text-gray-500">{user.email}</p>
+                        <p className="text-sm text-gray-500">{displayEmail}</p>
                       </div>
                     </div>
                   </div>
@@ -126,14 +131,14 @@ const AlumniVerificationPage = () => {
                       <FiBriefcase className="w-4 h-4 text-gray-400 mt-0.5" />
                       <div>
                         <span className="font-medium text-gray-900">Current Role:</span>
-                        <p className="text-gray-600">{alumni.jobTitle || 'N/A'} at {alumni.company || 'N/A'}</p>
+                        <p className="text-gray-600">{alumni.jobTitle || 'N/A'} at {alumni.currentCompany || alumni.company || 'N/A'}</p>
                       </div>
                     </div>
 
-                    {alumni.linkedInProfile && (
+                    {(alumni.linkedinUrl || alumni.linkedInProfile) && (
                       <div className="pt-2">
                         <a 
-                          href={alumni.linkedInProfile} 
+                          href={alumni.linkedinUrl || alumni.linkedInProfile} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="inline-flex items-center text-sm text-indigo-600 hover:text-indigo-800"
@@ -172,7 +177,7 @@ const AlumniVerificationPage = () => {
         onClose={() => setIsConfirmOpen(false)}
         onConfirm={handleConfirmAction}
         title={`${actionType === 'verify' ? 'Verify' : 'Reject'} Alumni Profile`}
-        message={`Are you sure you want to ${actionType} the alumni profile for ${selectedAlumni?.user?.firstName}?`}
+        message={`Are you sure you want to ${actionType} the alumni profile for ${selectedAlumni?.fullName || selectedAlumni?.user?.fullName || selectedAlumni?.user?.firstName || 'this alumni'}?`}
         confirmText={actionType === 'verify' ? 'Verify' : 'Reject'}
         confirmVariant={actionType === 'verify' ? 'success' : 'danger'}
         isLoading={actionLoading}

@@ -31,11 +31,13 @@ public class AdminController {
     }
 
     @GetMapping("/users")
-    @Operation(summary = "List all platform users with pagination")
+    @Operation(summary = "List all platform users with optional search, role filter, and pagination")
     public ResponseEntity<PagedResponse<UserResponse>> getUsers(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String role,
             @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) int page,
             @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_SIZE) int size) {
-        return ResponseEntity.ok(adminService.getUsers(page, size));
+        return ResponseEntity.ok(adminService.getUsers(search, role, page, size));
     }
 
     @PatchMapping("/users/{id}/suspend")

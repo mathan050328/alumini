@@ -23,6 +23,9 @@ public class RegisterRequest {
     @Email(message = "Invalid email format")
     private String email;
 
+    @Size(max = 50, message = "Roll number cannot exceed 50 characters")
+    private String rollNumber;
+
     @NotBlank(message = "Password is required")
     @Size(min = 8, max = 100, message = "Password must be at least 8 characters")
     private String password;

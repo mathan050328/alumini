@@ -12,6 +12,7 @@ import com.alumniconnect.entity.enums.Role;
 import com.alumniconnect.entity.enums.VerificationStatus;
 import com.alumniconnect.exception.BadRequestException;
 import com.alumniconnect.exception.DuplicateResourceException;
+import com.alumniconnect.exception.ResourceNotFoundException;
 import com.alumniconnect.repository.AlumniProfileRepository;
 import com.alumniconnect.repository.StudentProfileRepository;
 import com.alumniconnect.repository.UserRepository;
@@ -40,8 +41,17 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail().toLowerCase().trim())) {
+        String emailTrimmed = request.getEmail().toLowerCase().trim();
+        if (userRepository.existsByEmail(emailTrimmed)) {
             throw new DuplicateResourceException("User", "email", request.getEmail());
+        }
+
+        String rollNumber = request.getRollNumber() != null && !request.getRollNumber().isBlank()
+                ? request.getRollNumber().trim().toUpperCase()
+                : null;
+
+        if (rollNumber != null && userRepository.existsByRollNumber(rollNumber)) {
+            throw new DuplicateResourceException("User", "rollNumber", rollNumber);
         }
 
         Role role;
@@ -57,11 +67,13 @@ public class AuthService {
         }
 
         User user = User.builder()
-                .email(request.getEmail().toLowerCase().trim())
+                .email(emailTrimmed)
+                .rollNumber(rollNumber)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .fullName(request.getFullName().trim())
                 .role(role)
                 .isActive(true)
+                .passwordChanged(true)
                 .build();
 
         user = userRepository.save(user);
@@ -75,7 +87,8 @@ public class AuthService {
         } else if (role == Role.ROLE_ALUMNI) {
             AlumniProfile profile = AlumniProfile.builder()
                     .user(user)
-                    .verificationStatus(VerificationStatus.PENDING)
+                    .verificationStatus(VerificationStatus.VERIFIED)
+                    .verifiedAt(java.time.LocalDateTime.now())
                     .mentorshipAvailability(MentorshipAvailability.AVAILABLE)
                     .build();
             alumniProfileRepository.save(profile);
@@ -93,17 +106,21 @@ public class AuthService {
         return AuthResponse.builder()
                 .accessToken(jwt)
                 .userId(user.getId())
+                .rollNumber(user.getRollNumber())
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .role(user.getRole().name())
                 .profilePictureUrl(user.getProfilePictureUrl())
+                .passwordChanged(user.getPasswordChanged())
                 .build();
     }
 
     public AuthResponse login(LoginRequest request) {
+        String identifier = request.getEmail().trim();
+
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getEmail().toLowerCase().trim(),
+                        identifier,
                         request.getPassword()
                 )
         );
@@ -111,16 +128,32 @@ public class AuthService {
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = tokenProvider.generateToken(authentication);
 
-        User user = userRepository.findByEmail(request.getEmail().toLowerCase().trim())
-                .orElseThrow(() -> new BadRequestException("Invalid email or password"));
+        User user = userRepository.findByEmailIgnoreCaseOrRollNumberIgnoreCase(identifier, identifier)
+                .orElseThrow(() -> new BadRequestException("Invalid credentials"));
 
         return AuthResponse.builder()
                 .accessToken(jwt)
                 .userId(user.getId())
+                .rollNumber(user.getRollNumber())
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .role(user.getRole().name())
                 .profilePictureUrl(user.getProfilePictureUrl())
+                .passwordChanged(user.getPasswordChanged())
                 .build();
+    }
+
+    @Transactional
+    public void changePassword(Long userId, String currentPassword, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new BadRequestException("Current password does not match");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPasswordChanged(true);
+        userRepository.save(user);
     }
 }

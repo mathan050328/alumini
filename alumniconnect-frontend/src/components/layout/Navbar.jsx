@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { FiMenu, FiX, FiBell, FiMessageSquare, FiChevronDown, FiLogOut, FiUser, FiSettings } from 'react-icons/fi';
+import { FiMenu, FiX, FiBell, FiMessageSquare, FiChevronDown, FiLogOut, FiUser, FiSettings, FiPlus, FiBriefcase, FiCalendar, FiEdit, FiLock } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import { getUnreadCount } from '../../api/notificationApi';
 import { ROLES } from '../../utils/constants';
+import ChangePasswordModal from '../auth/ChangePasswordModal';
 
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuth();
@@ -11,13 +12,19 @@ const Navbar = () => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdown, setProfileDropdown] = useState(false);
+  const [createDropdown, setCreateDropdown] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const dropdownRef = useRef(null);
+  const createDropdownRef = useRef(null);
   const isAuth = typeof isAuthenticated === 'function' ? isAuthenticated() : !!isAuthenticated;
 
   useEffect(() => {
     if (isAuth) {
       getUnreadCount()
-        .then((res) => setUnreadNotifications(res.data))
+        .then((res) => setUnreadNotifications(
+          typeof res.data === 'number' ? res.data : (res.data?.unreadCount || 0)
+        ))
         .catch(() => {});
     }
   }, [location.pathname, isAuth]);
@@ -26,6 +33,9 @@ const Navbar = () => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setProfileDropdown(false);
+      }
+      if (createDropdownRef.current && !createDropdownRef.current.contains(e.target)) {
+        setCreateDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -124,6 +134,46 @@ const Navbar = () => {
                   <FiMessageSquare className="h-5 w-5" />
                 </Link>
 
+                {/* Alumni Quick Create Button */}
+                {(user?.role === ROLES.ALUMNI || user?.role === ROLES.ADMIN) && (
+                  <div className="relative" ref={createDropdownRef}>
+                    <button
+                      onClick={() => setCreateDropdown(!createDropdown)}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
+                      title="Create"
+                    >
+                      <FiPlus className="h-4 w-4" />
+                      <span className="hidden md:inline">Create</span>
+                      <FiChevronDown className="h-3.5 w-3.5" />
+                    </button>
+                    {createDropdown && (
+                      <div className="absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
+                        <Link
+                          to="/posts/create"
+                          onClick={() => setCreateDropdown(false)}
+                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700"
+                        >
+                          <FiEdit className="h-4 w-4" /> Write a Post
+                        </Link>
+                        <Link
+                          to="/events/create"
+                          onClick={() => setCreateDropdown(false)}
+                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700"
+                        >
+                          <FiCalendar className="h-4 w-4" /> Create Event
+                        </Link>
+                        <Link
+                          to="/jobs/create"
+                          onClick={() => setCreateDropdown(false)}
+                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700"
+                        >
+                          <FiBriefcase className="h-4 w-4" /> Post a Job
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Notifications */}
                 <Link to="/notifications" className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg relative">
                   <FiBell className="h-5 w-5" />
@@ -134,15 +184,31 @@ const Navbar = () => {
                   )}
                 </Link>
 
+
                 {/* Profile Dropdown */}
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setProfileDropdown(!profileDropdown)}
-                    className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
                   >
-                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                    {user?.profilePictureUrl ? (
+                      <img
+                        src={user.profilePictureUrl}
+                        alt={user.fullName || 'User'}
+                        className="w-8 h-8 rounded-full object-cover border border-gray-200 ring-2 ring-indigo-100"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          if (e.currentTarget.nextSibling) {
+                            e.currentTarget.nextSibling.style.display = 'flex';
+                          }
+                        }}
+                      />
+                    ) : null}
+                    <div 
+                      className={`w-8 h-8 rounded-full bg-indigo-100 items-center justify-center ${user?.profilePictureUrl ? 'hidden' : 'flex'}`}
+                    >
                       <span className="text-indigo-700 font-medium text-sm">
-                        {user.fullName?.charAt(0)?.toUpperCase()}
+                        {user.fullName?.charAt(0)?.toUpperCase() || 'U'}
                       </span>
                     </div>
                     <span className="hidden md:block text-sm font-medium text-gray-700">{user.fullName}</span>
@@ -153,7 +219,12 @@ const Navbar = () => {
                     <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
                       <div className="px-4 py-3 border-b border-gray-100">
                         <p className="text-sm font-medium text-gray-900">{user.fullName}</p>
-                        <p className="text-xs text-gray-500">{user.email}</p>
+                        {user.rollNumber && (
+                          <span className="inline-block px-1.5 py-0.5 rounded text-[11px] font-mono font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100 mt-1">
+                            ID: {user.rollNumber}
+                          </span>
+                        )}
+                        <p className="text-xs text-gray-500 mt-0.5">{user.email}</p>
                         <p className="text-xs text-indigo-600 mt-1">{user.role?.replace('ROLE_', '')}</p>
                       </div>
                       {user.role !== ROLES.ADMIN && (
@@ -166,6 +237,16 @@ const Navbar = () => {
                           <span>My Profile</span>
                         </Link>
                       )}
+                      <button
+                        onClick={() => {
+                          setProfileDropdown(false);
+                          setShowPasswordModal(true);
+                        }}
+                        className="flex items-center space-x-2 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        <FiLock className="h-4 w-4 text-gray-500" />
+                        <span>Change Password</span>
+                      </button>
                       <button
                         onClick={handleLogout}
                         className="flex items-center space-x-2 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
@@ -220,7 +301,29 @@ const Navbar = () => {
             ))}
           </div>
         )}
+
+        {/* Password warning banner for first-time login users */}
+        {user && user.passwordChanged === false && (
+          <div className="bg-amber-500 text-white text-xs sm:text-sm px-4 py-2 rounded-lg mb-2 flex items-center justify-between font-medium shadow-sm">
+            <div className="flex items-center space-x-2">
+              <FiLock className="w-4 h-4 shrink-0" />
+              <span>You are using a default institutional password. Please change it to secure your account.</span>
+            </div>
+            <button
+              onClick={() => setShowPasswordModal(true)}
+              className="ml-3 bg-white text-amber-800 px-3 py-1 rounded text-xs font-semibold hover:bg-amber-50 transition-colors shrink-0 shadow-sm"
+            >
+              Change Password Now
+            </button>
+          </div>
+        )}
       </div>
+
+      <ChangePasswordModal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+        isFirstLogin={user?.passwordChanged === false}
+      />
     </nav>
   );
 };

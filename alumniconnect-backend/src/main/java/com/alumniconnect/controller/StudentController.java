@@ -69,7 +69,7 @@ public class StudentController {
     @Operation(summary = "Remove skill from student profile")
     public ResponseEntity<StudentProfileResponse> removeSkill(
             @AuthenticationPrincipal UserPrincipal currentUser,
-            @PathVariable Long skillId) {
+            @PathVariable String skillId) {
         return ResponseEntity.ok(studentService.removeSkill(currentUser.getId(), skillId));
     }
 

@@ -35,13 +35,27 @@ const UserManagementPage = () => {
     setLoading(true);
     try {
       const response = await getUsers({
-        page: currentPage,
-        limit: itemsPerPage,
-        search: searchTerm,
-        role: roleFilter
+        page: Math.max(0, currentPage - 1),
+        size: itemsPerPage,
+        search: searchTerm?.trim() || undefined,
+        role: roleFilter || undefined
       });
       const data = response.data || {};
-      const list = Array.isArray(data) ? data : (data.content || data.users || []);
+      let list = Array.isArray(data) ? data : (data.content || data.users || []);
+      
+      // Client-side safeguard filtering
+      if (searchTerm?.trim()) {
+        const q = searchTerm.toLowerCase().trim();
+        list = list.filter(u => 
+          (u.fullName || '').toLowerCase().includes(q) || 
+          (u.email || '').toLowerCase().includes(q) ||
+          (u.rollNumber || '').toLowerCase().includes(q)
+        );
+      }
+      if (roleFilter) {
+        list = list.filter(u => u.role === roleFilter || u.role === `ROLE_${roleFilter}`);
+      }
+
       setUsers(list);
       setTotalPages(data.totalPages || 1);
     } catch (error) {
@@ -68,18 +82,23 @@ const UserManagementPage = () => {
     
     setActionLoading(true);
     try {
+      const displayName = selectedUser.fullName || selectedUser.firstName || 'User';
       if (actionType === 'suspend') {
-        await suspendUser(selectedUser._id || selectedUser.id);
-        toast.success(`User ${selectedUser.firstName} suspended successfully`);
+        await suspendUser(selectedUser.id);
+        toast.success(`User ${displayName} suspended successfully`);
       } else if (actionType === 'activate') {
-        await activateUser(selectedUser._id || selectedUser.id);
-        toast.success(`User ${selectedUser.firstName} activated successfully`);
+        await activateUser(selectedUser.id);
+        toast.success(`User ${displayName} activated successfully`);
       }
       
       // Update local state to reflect change without full reload if possible
       setUsers(users.map(u => {
-        if ((u._id || u.id) === (selectedUser._id || selectedUser.id)) {
-          return { ...u, status: actionType === 'suspend' ? 'Suspended' : 'Active' };
+        if (u.id === selectedUser.id) {
+          return { 
+            ...u, 
+            isActive: actionType === 'activate',
+            status: actionType === 'suspend' ? 'Suspended' : 'Active' 
+          };
         }
         return u;
       }));
@@ -114,7 +133,7 @@ const UserManagementPage = () => {
         <div className="w-full sm:w-1/2 lg:w-1/3">
           <SearchBar 
             onSearch={handleSearch} 
-            placeholder="Search users by name or email..." 
+            placeholder="Search users by name, roll no, or email..." 
           />
         </div>
         
@@ -150,6 +169,9 @@ const UserManagementPage = () => {
                     Name
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Roll No / College ID
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Email
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -167,57 +189,72 @@ const UserManagementPage = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {users.map((user) => (
-                  <tr key={user._id || user.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <img className="h-10 w-10 rounded-full object-cover bg-gray-100" src={user.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent((user.firstName || '') + ' ' + (user.lastName || ''))}&background=random`} alt="" />
+                {users.map((user) => {
+                  const displayName = user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
+                  const avatar = user.profilePictureUrl || user.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random`;
+                  const isUserActive = user.isActive !== undefined ? user.isActive : (user.status !== 'Suspended');
+
+                  return (
+                    <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10">
+                            <img className="h-10 w-10 rounded-full object-cover bg-gray-100" src={avatar} alt="" />
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">{displayName}</div>
+                          </div>
                         </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{user.firstName} {user.lastName}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{user.email}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge variant={getRoleBadgeVariant(user.role)}>{user.role}</Badge>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge variant={user.status === 'Suspended' ? 'danger' : 'success'}>
-                        {user.status || 'Active'}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(user.createdAt)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      {user.role !== ROLES.ADMIN && (
-                        <>
-                          {user.status === 'Suspended' ? (
-                            <button
-                              onClick={() => openConfirmDialog(user, 'activate')}
-                              className="text-green-600 hover:text-green-900 mx-2"
-                              title="Activate User"
-                            >
-                              <FiUnlock className="h-5 w-5" />
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => openConfirmDialog(user, 'suspend')}
-                              className="text-red-600 hover:text-red-900 mx-2"
-                              title="Suspend User"
-                            >
-                              <FiLock className="h-5 w-5" />
-                            </button>
-                          )}
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {user.rollNumber ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                            {user.rollNumber}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-400 italic">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{user.email}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Badge variant={getRoleBadgeVariant(user.role)}>{user.role}</Badge>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Badge variant={!isUserActive ? 'danger' : 'success'}>
+                          {!isUserActive ? 'Suspended' : 'Active'}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatDate(user.createdAt)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        {user.role !== ROLES.ADMIN && (
+                          <>
+                            {!isUserActive ? (
+                              <button
+                                onClick={() => openConfirmDialog(user, 'activate')}
+                                className="text-green-600 hover:text-green-900 mx-2"
+                                title="Activate User"
+                              >
+                                <FiUnlock className="h-5 w-5" />
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => openConfirmDialog(user, 'suspend')}
+                                className="text-red-600 hover:text-red-900 mx-2"
+                                title="Suspend User"
+                              >
+                                <FiLock className="h-5 w-5" />
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -239,7 +276,7 @@ const UserManagementPage = () => {
         onClose={() => setIsConfirmOpen(false)}
         onConfirm={handleConfirmAction}
         title={`${actionType === 'suspend' ? 'Suspend' : 'Activate'} User`}
-        message={`Are you sure you want to ${actionType} ${selectedUser?.firstName} ${selectedUser?.lastName}?`}
+        message={`Are you sure you want to ${actionType} ${selectedUser?.fullName || selectedUser?.email || 'this user'}?`}
         confirmText={actionType === 'suspend' ? 'Suspend' : 'Activate'}
         confirmVariant={actionType === 'suspend' ? 'danger' : 'success'}
         isLoading={actionLoading}
