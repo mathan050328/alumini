@@ -21,4 +21,5 @@ public class AuthResponse {
     private String role;
     private String profilePictureUrl;
     private Boolean passwordChanged;
+    private Boolean isEmailVerified;
 }

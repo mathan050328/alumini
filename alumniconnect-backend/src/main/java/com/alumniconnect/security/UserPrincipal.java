@@ -29,6 +29,7 @@ public class UserPrincipal implements UserDetails {
     private Collection<? extends GrantedAuthority> authorities;
     private boolean active;
     private boolean passwordChanged;
+    private boolean emailVerified;
 
     public static UserPrincipal create(User user) {
         List<GrantedAuthority> authorities = Collections.singletonList(
@@ -44,6 +45,7 @@ public class UserPrincipal implements UserDetails {
                 .authorities(authorities)
                 .active(user.getIsActive() != null && user.getIsActive())
                 .passwordChanged(user.getPasswordChanged() != null && user.getPasswordChanged())
+                .emailVerified(user.getIsEmailVerified() != null && user.getIsEmailVerified())
                 .build();
     }
 

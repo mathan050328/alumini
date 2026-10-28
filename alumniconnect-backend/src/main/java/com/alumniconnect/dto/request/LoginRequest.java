@@ -13,9 +13,16 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class LoginRequest {
 
-    @NotBlank(message = "Roll Number or Email is required")
+    private String userId;
+
     private String email;
 
     @NotBlank(message = "Password is required")
     private String password;
+
+    public String getIdentifier() {
+        if (userId != null && !userId.isBlank()) return userId.trim();
+        if (email != null && !email.isBlank()) return email.trim();
+        return "";
+    }
 }

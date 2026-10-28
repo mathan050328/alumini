@@ -131,6 +131,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 .role(Role.ROLE_ADMIN)
                 .isActive(true)
                 .passwordChanged(true)
+                .isEmailVerified(true)
                 .build();
         return userRepository.save(admin);
     }
@@ -160,6 +161,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 .role(Role.ROLE_ALUMNI)
                 .isActive(true)
                 .passwordChanged(true)
+                .isEmailVerified(true)
                 .profilePictureUrl(avatarUrl)
                 .build();
         userRepository.save(user);
@@ -187,12 +189,13 @@ public class DatabaseSeeder implements CommandLineRunner {
     private void createDefaultStudent(List<Skill> skills) {
         User studentUser = User.builder()
                 .rollNumber("21CS101")
-                .email("student@alumniconnect.com")
+                .email(null)
                 .password(passwordEncoder.encode("Password@123"))
                 .fullName("Rahul Verma")
                 .role(Role.ROLE_STUDENT)
                 .isActive(true)
                 .passwordChanged(false)
+                .isEmailVerified(false)
                 .profilePictureUrl("https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150")
                 .build();
         userRepository.save(studentUser);

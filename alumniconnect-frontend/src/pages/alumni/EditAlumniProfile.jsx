@@ -56,6 +56,7 @@ const EditAlumniProfile = () => {
       setProfilePictureUrl(profile.profilePictureUrl || profile.avatar || '');
 
       setFormData({
+        email: profile.email || profile.user?.email || '',
         phone: profile.phone || '',
         department: profile.department || '',
         graduationYear: profile.graduationYear ?? '',
@@ -150,6 +151,7 @@ const EditAlumniProfile = () => {
       setSaving(true);
       
       const payload = {
+        email: formData.email?.trim() || null,
         phone: formData.phone?.trim() || null,
         department: formData.department?.trim() || null,
         graduationYear: formData.graduationYear !== '' && formData.graduationYear != null 
@@ -168,6 +170,9 @@ const EditAlumniProfile = () => {
       };
 
       await updateAlumniProfile(payload);
+      if (formData.email?.trim()) {
+        updateUser({ email: formData.email.trim() });
+      }
       toast.success('Profile updated successfully');
       navigate('/alumni/profile');
     } catch (error) {
@@ -257,6 +262,22 @@ const EditAlumniProfile = () => {
           <div>
             <h2 className="text-lg font-bold text-gray-900 mb-4 border-b pb-2">Basic Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Recovery Email Address
+                </label>
+                <input 
+                  type="email" 
+                  name="email" 
+                  value={formData.email} 
+                  onChange={handleChange} 
+                  placeholder="e.g. arun.dev@example.com"
+                  className="w-full rounded-lg border border-gray-300 p-2.5 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 text-sm" 
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Used for password recovery (Forgot Password). Sign-in uses your User ID.
+                </p>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                 <input 

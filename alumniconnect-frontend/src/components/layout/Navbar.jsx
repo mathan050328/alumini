@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { FiMenu, FiX, FiBell, FiMessageSquare, FiChevronDown, FiLogOut, FiUser, FiSettings, FiPlus, FiBriefcase, FiCalendar, FiEdit, FiLock } from 'react-icons/fi';
+import { FiMenu, FiX, FiBell, FiMessageSquare, FiChevronDown, FiLogOut, FiUser, FiSettings, FiPlus, FiBriefcase, FiCalendar, FiEdit, FiLock, FiCamera } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import { getUnreadCount } from '../../api/notificationApi';
 import { ROLES } from '../../utils/constants';
 import ChangePasswordModal from '../auth/ChangePasswordModal';
+import ProfilePictureModal from '../common/ProfilePictureModal';
 
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuth();
@@ -15,6 +16,7 @@ const Navbar = () => {
   const [createDropdown, setCreateDropdown] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showPictureModal, setShowPictureModal] = useState(false);
   const dropdownRef = useRef(null);
   const createDropdownRef = useRef(null);
   const isAuth = typeof isAuthenticated === 'function' ? isAuthenticated() : !!isAuthenticated;
@@ -224,8 +226,8 @@ const Navbar = () => {
                             ID: {user.rollNumber}
                           </span>
                         )}
-                        <p className="text-xs text-gray-500 mt-0.5">{user.email}</p>
-                        <p className="text-xs text-indigo-600 mt-1">{user.role?.replace('ROLE_', '')}</p>
+                        {user.email && <p className="text-xs text-gray-500 mt-0.5">{user.email}</p>}
+                        <p className="text-xs font-medium text-indigo-600 mt-1">{user.role?.replace('ROLE_', '')}</p>
                       </div>
                       {user.role !== ROLES.ADMIN && (
                         <Link
@@ -233,10 +235,20 @@ const Navbar = () => {
                           onClick={() => setProfileDropdown(false)}
                           className="flex items-center space-x-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
                         >
-                          <FiUser className="h-4 w-4" />
+                          <FiUser className="h-4 w-4 text-gray-500" />
                           <span>My Profile</span>
                         </Link>
                       )}
+                      <button
+                        onClick={() => {
+                          setProfileDropdown(false);
+                          setShowPictureModal(true);
+                        }}
+                        className="flex items-center space-x-2 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        <FiCamera className="h-4 w-4 text-gray-500" />
+                        <span>Change Profile Picture</span>
+                      </button>
                       <button
                         onClick={() => {
                           setProfileDropdown(false);
@@ -260,12 +272,12 @@ const Navbar = () => {
               </>
             ) : (
               <div className="flex items-center space-x-3">
-                <Link to="/login" className="text-sm font-medium text-gray-700 hover:text-gray-900">Sign In</Link>
                 <Link
-                  to="/register"
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+                  to="/login"
+                  className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-1.5"
                 >
-                  Get Started
+                  <FiLock className="w-3.5 h-3.5" />
+                  <span>Institutional Login</span>
                 </Link>
               </div>
             )}
@@ -323,6 +335,12 @@ const Navbar = () => {
         isOpen={showPasswordModal}
         onClose={() => setShowPasswordModal(false)}
         isFirstLogin={user?.passwordChanged === false}
+      />
+
+      <ProfilePictureModal
+        isOpen={showPictureModal}
+        onClose={() => setShowPictureModal(false)}
+        currentPictureUrl={user?.profilePictureUrl}
       />
     </nav>
   );

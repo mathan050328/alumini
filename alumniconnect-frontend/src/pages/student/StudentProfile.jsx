@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FiEdit2, FiMail, FiPhone, FiGithub, FiLinkedin, FiDownload, FiMapPin, FiBriefcase, FiAward, FiBook } from 'react-icons/fi';
+import { FiEdit2, FiMail, FiPhone, FiGithub, FiLinkedin, FiDownload, FiMapPin, FiBriefcase, FiAward, FiBook, FiCamera } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { getStudentProfile } from '../../api/studentApi';
+import { useAuth } from '../../context/AuthContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Badge from '../../components/common/Badge';
+import ProfilePictureModal from '../../components/common/ProfilePictureModal';
 
 const StudentProfile = () => {
+  const { user } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showPictureModal, setShowPictureModal] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -78,23 +82,33 @@ const StudentProfile = () => {
         <div className="px-8 pb-8 relative">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end -mt-16 mb-4">
             <div className="flex items-end">
-              {displayAvatar ? (
-                <img 
-                  src={displayAvatar} 
-                  alt={displayName} 
-                  className="w-32 h-32 rounded-full border-4 border-white object-cover shadow-md bg-white"
-                />
-              ) : (
-                <div className="w-32 h-32 rounded-full border-4 border-white shadow-md bg-indigo-100 flex items-center justify-center text-4xl font-bold text-indigo-600">
-                  {initials}
-                </div>
-              )}
+              <div className="relative group">
+                {displayAvatar ? (
+                  <img 
+                    src={displayAvatar} 
+                    alt={displayName} 
+                    className="w-32 h-32 rounded-full border-4 border-white object-cover shadow-md bg-white"
+                  />
+                ) : (
+                  <div className="w-32 h-32 rounded-full border-4 border-white shadow-md bg-indigo-100 flex items-center justify-center text-4xl font-bold text-indigo-600">
+                    {initials}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowPictureModal(true)}
+                  className="absolute bottom-1 right-1 p-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg border-2 border-white transition-all hover:scale-110"
+                  title="Change Profile Picture"
+                >
+                  <FiCamera className="w-4 h-4" />
+                </button>
+              </div>
               <div className="ml-6 mb-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-3xl font-bold text-gray-900">{displayName}</h1>
                   {profile.rollNumber && (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 font-mono">
-                      Roll No: {profile.rollNumber}
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 font-mono" title="Institutional User ID">
+                      User ID: {profile.rollNumber}
                     </span>
                   )}
                 </div>
@@ -188,8 +202,15 @@ const StudentProfile = () => {
               <div className="flex items-start">
                 <FiMail className="w-5 h-5 text-gray-400 mr-3 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Email</p>
-                  <a href={`mailto:${profile.email}`} className="text-indigo-600 hover:underline text-sm break-all">{profile.email}</a>
+                  <p className="text-sm font-medium text-gray-900">Recovery / Contact Email</p>
+                  {profile.email ? (
+                    <div>
+                      <a href={`mailto:${profile.email}`} className="text-indigo-600 hover:underline text-sm break-all font-medium">{profile.email}</a>
+                      <p className="text-[11px] text-gray-400 mt-0.5">Used for password recovery</p>
+                    </div>
+                  ) : (
+                    <p className="text-amber-600 text-xs mt-0.5">Not set — edit profile to add recovery email</p>
+                  )}
                 </div>
               </div>
               
@@ -272,6 +293,15 @@ const StudentProfile = () => {
 
         </div>
       </div>
+
+      <ProfilePictureModal
+        isOpen={showPictureModal}
+        onClose={() => setShowPictureModal(false)}
+        currentPictureUrl={profile?.profilePictureUrl || profile?.profilePicture}
+        onUpdated={(newUrl) => {
+          setProfile(prev => ({ ...prev, profilePictureUrl: newUrl }));
+        }}
+      />
     </div>
   );
 };

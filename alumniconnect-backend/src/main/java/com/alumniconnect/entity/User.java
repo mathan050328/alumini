@@ -28,12 +28,14 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "roll_number", unique = true, length = 50)
+    @Column(name = "roll_number", nullable = false, unique = true, length = 50)
     private String rollNumber;
 
-    @Column(nullable = false, unique = true, length = 150)
+    @Column(nullable = true, unique = true, length = 150)
     private String email;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @ToString.Exclude
     @Column(nullable = false)
     private String password;
 
@@ -54,6 +56,18 @@ public class User {
     @Column(name = "password_changed", nullable = false)
     @Builder.Default
     private Boolean passwordChanged = false;
+
+    @Column(name = "is_email_verified", columnDefinition = "boolean default false")
+    @Builder.Default
+    private Boolean isEmailVerified = false;
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @ToString.Exclude
+    @Column(name = "email_verification_code", length = 10)
+    private String emailVerificationCode;
+
+    @Column(name = "email_verification_expiry")
+    private LocalDateTime emailVerificationExpiry;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

@@ -19,12 +19,12 @@ public class RegisterRequest {
     @Size(min = 2, max = 100, message = "Full name must be between 2 and 100 characters")
     private String fullName;
 
-    @NotBlank(message = "Email is required")
+    @NotBlank(message = "Roll Number / User ID is required")
+    @Size(min = 2, max = 50, message = "Roll number must be between 2 and 50 characters")
+    private String rollNumber;
+
     @Email(message = "Invalid email format")
     private String email;
-
-    @Size(max = 50, message = "Roll number cannot exceed 50 characters")
-    private String rollNumber;
 
     @NotBlank(message = "Password is required")
     @Size(min = 8, max = 100, message = "Password must be at least 8 characters")

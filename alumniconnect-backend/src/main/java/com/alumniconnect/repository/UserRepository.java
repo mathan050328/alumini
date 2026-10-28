@@ -14,13 +14,21 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
 
     Optional<User> findByEmail(String email);
 
+    Optional<User> findByEmailIgnoreCase(String email);
+
     Optional<User> findByRollNumber(String rollNumber);
+
+    Optional<User> findByRollNumberIgnoreCase(String rollNumber);
 
     Optional<User> findByEmailIgnoreCaseOrRollNumberIgnoreCase(String email, String rollNumber);
 
     Boolean existsByEmail(String email);
 
+    Boolean existsByEmailIgnoreCase(String email);
+
     Boolean existsByRollNumber(String rollNumber);
+
+    Boolean existsByRollNumberIgnoreCase(String rollNumber);
 
     List<User> findByRole(Role role);
 

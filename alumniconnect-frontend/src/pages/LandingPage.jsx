@@ -29,11 +29,8 @@ const LandingPage = () => {
               The ultimate platform bridging the gap between students and alumni. Discover mentorship, find jobs, and build a network that lasts a lifetime.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link to="/register" className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium rounded-full text-indigo-900 bg-white hover:bg-indigo-50 transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-                Get Started <FiArrowRight className="ml-2" />
-              </Link>
-              <Link to="/login" className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium rounded-full text-white border-2 border-white/30 hover:bg-white/10 transition-colors">
-                Sign In
+              <Link to="/login" className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium rounded-full text-indigo-900 bg-white hover:bg-indigo-50 transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                Access Institutional Portal <FiArrowRight className="ml-2" />
               </Link>
             </div>
           </div>
@@ -192,8 +189,8 @@ const LandingPage = () => {
       {/* Footer CTA */}
       <section className="bg-indigo-600 py-16 text-center text-white">
         <h2 className="text-3xl font-bold mb-6">Ready to accelerate your career?</h2>
-        <Link to="/register" className="inline-block px-8 py-4 text-lg font-medium rounded-full text-indigo-600 bg-white hover:bg-gray-100 transition-colors shadow-lg">
-          Join AlumniConnect Today
+        <Link to="/login" className="inline-block px-8 py-4 text-lg font-medium rounded-full text-indigo-600 bg-white hover:bg-gray-100 transition-colors shadow-lg">
+          Access Institutional Portal
         </Link>
       </section>
     </div>

@@ -40,6 +40,24 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getUsers(search, role, page, size));
     }
 
+    @PostMapping(value = "/users/bulk-import", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Bulk import student and alumni accounts via CSV file")
+    public ResponseEntity<com.alumniconnect.dto.response.BulkImportResponse> bulkImportUsers(
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        return ResponseEntity.ok(adminService.bulkImportUsers(file));
+    }
+
+    @GetMapping(value = "/users/template", produces = "text/csv")
+    @Operation(summary = "Download sample CSV template for bulk user import")
+    public ResponseEntity<byte[]> downloadUsersTemplate() {
+        String csv = adminService.getCsvTemplate();
+        byte[] bytes = csv.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"users_import_template.csv\"")
+                .contentType(org.springframework.http.MediaType.parseMediaType("text/csv"))
+                .body(bytes);
+    }
+
     @PatchMapping("/users/{id}/suspend")
     @Operation(summary = "Suspend a user account")
     public ResponseEntity<Void> suspendUser(@PathVariable Long id) {
@@ -51,6 +69,20 @@ public class AdminController {
     @Operation(summary = "Activate a user account")
     public ResponseEntity<Void> activateUser(@PathVariable Long id) {
         adminService.activateUser(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/users/{id}/reset-password")
+    @Operation(summary = "Reset user password to default institutional password (Password@123)")
+    public ResponseEntity<Void> resetUserPassword(@PathVariable Long id) {
+        adminService.resetUserPassword(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/users/{id}")
+    @Operation(summary = "Delete user account and profile")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        adminService.deleteUser(id);
         return ResponseEntity.ok().build();
     }
 

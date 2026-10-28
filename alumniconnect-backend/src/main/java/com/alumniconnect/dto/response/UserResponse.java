@@ -21,5 +21,6 @@ public class UserResponse {
     private String profilePictureUrl;
     private Boolean isActive;
     private Boolean passwordChanged;
+    private Boolean isEmailVerified;
     private LocalDateTime createdAt;
 }

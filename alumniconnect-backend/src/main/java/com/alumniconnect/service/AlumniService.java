@@ -78,6 +78,12 @@ public class AlumniService {
         if (request.getLinkedinUrl() != null) profile.setLinkedinUrl(request.getLinkedinUrl());
         if (request.getMentorshipAvailability() != null) profile.setMentorshipAvailability(request.getMentorshipAvailability());
 
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            User user = profile.getUser();
+            user.setEmail(request.getEmail().trim().toLowerCase());
+            userRepository.save(user);
+        }
+
         if (request.getSkills() != null) {
             Set<Skill> newSkills = new HashSet<>();
             for (String rawName : request.getSkills()) {

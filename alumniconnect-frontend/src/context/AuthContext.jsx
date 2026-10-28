@@ -28,6 +28,7 @@ export const AuthProvider = ({ children }) => {
       role: data.role,
       profilePictureUrl: data.profilePictureUrl || null,
       passwordChanged: data.passwordChanged ?? true,
+      isEmailVerified: data.isEmailVerified ?? false,
     };
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { FiMail, FiLock, FiEye, FiEyeOff, FiAlertCircle } from 'react-icons/fi';
+import { FiMail, FiLock, FiEye, FiEyeOff, FiAlertCircle, FiShield, FiKey, FiCheckCircle } from 'react-icons/fi';
+import { resetPassword } from '../../api/authApi';
 import { toast } from 'react-toastify';
 
 const LoginPage = () => {
@@ -16,8 +17,13 @@ const LoginPage = () => {
 
   // Forgot Password modal state
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState('');
-  const [forgotSending, setForgotSending] = useState(false);
+  const [forgotData, setForgotData] = useState({
+    rollNumberOrEmail: '',
+    email: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotSubmitted, setForgotSubmitted] = useState(false);
 
   const { login, isAuthenticated, user } = useAuth();
@@ -61,7 +67,7 @@ const LoginPage = () => {
     setError('');
     
     if (!formData.email || !formData.password) {
-      setError('Please enter both email and password');
+      setError('Please enter both your User ID and password');
       return;
     }
 
@@ -97,19 +103,27 @@ const LoginPage = () => {
             AlumniConnect
           </Link>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
+            Institutional Sign In
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Or{' '}
-            <Link to="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
-              create a new account
-            </Link>
+          <p className="mt-2 text-center text-sm text-gray-500">
+            Smart Alumni Networking & Mentorship Platform
           </p>
         </div>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-gray-100">
+        <div className="bg-white py-8 px-4 shadow sm:rounded-xl sm:px-10 border border-gray-100">
+          
+          {/* Institutional Provisioning Notice Banner */}
+          <div className="mb-6 p-4 rounded-xl bg-indigo-50/80 border border-indigo-100 flex items-start gap-3">
+            <div className="p-2 bg-indigo-100 text-indigo-700 rounded-lg shrink-0 mt-0.5">
+              <FiShield className="w-4 h-4" />
+            </div>
+            <div className="text-xs text-indigo-950 leading-relaxed">
+              <span className="font-semibold block text-indigo-900 mb-0.5">Institutional Access Only</span>
+              Accounts are provisioned by your college administration. Please log in using your <strong>Roll Number / Registration ID</strong> and institutional password.
+            </div>
+          </div>
           
           {error && (
             <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
@@ -123,11 +137,11 @@ const LoginPage = () => {
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Roll Number / College ID / Email
+                User ID / Roll Number
               </label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiMail className="h-5 w-5 text-gray-400" />
+                  <FiShield className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
                   id="email"
@@ -137,12 +151,12 @@ const LoginPage = () => {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2 border"
-                  placeholder="e.g. 21CS101 or you@example.com"
+                  className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2 border font-mono"
+                  placeholder="e.g. 21CS101, 15CS042, or ADMIN01"
                 />
               </div>
               <p className="mt-1 text-xs text-gray-500">
-                Sign in using your constant College Roll Number or registered email.
+                Sign in using the official User ID provided by your college administration.
               </p>
             </div>
 
@@ -196,7 +210,12 @@ const LoginPage = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    setForgotEmail(formData.email || '');
+                    setForgotData({
+                      rollNumberOrEmail: formData.email || '',
+                      email: '',
+                      newPassword: '',
+                      confirmPassword: ''
+                    });
                     setForgotSubmitted(false);
                     setIsForgotModalOpen(true);
                   }}
@@ -231,7 +250,7 @@ const LoginPage = () => {
           {/* Quick Demo Sign-In */}
           <div className="mt-6 pt-6 border-t border-gray-100">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider text-center mb-3">
-              One-Click Demo Sign In (Roll Number / Email)
+              One-Click Demo Sign In (Admin-Issued User ID)
             </p>
             <div className="grid grid-cols-3 gap-2">
               <button
@@ -291,6 +310,15 @@ const LoginPage = () => {
             </div>
           </div>
 
+          <div className="mt-4 pt-4 border-t border-gray-100 text-center">
+            <p className="text-xs text-gray-500">
+              New here?{' '}
+              <Link to="/register" className="font-semibold text-indigo-600 hover:text-indigo-500">
+                Register with your College ID
+              </Link>
+            </p>
+          </div>
+
         </div>
       </div>
 
@@ -298,80 +326,164 @@ const LoginPage = () => {
       {isForgotModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 relative animate-in fade-in zoom-in duration-200">
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Reset Password</h3>
-            <p className="text-sm text-gray-500 mb-4">
-              Enter your registered email address to receive password recovery instructions.
-            </p>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center font-bold">
+                <FiKey className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Reset Password</h3>
+                <p className="text-xs text-gray-500">Self-Service Institutional Verification</p>
+              </div>
+            </div>
 
             {forgotSubmitted ? (
-              <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center my-4">
-                <div className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-2 font-bold text-lg">
+              <div className="bg-green-50 border border-green-200 rounded-xl p-5 text-center my-4">
+                <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3 font-bold text-xl">
                   ✓
                 </div>
-                <h4 className="font-semibold text-green-900 text-sm">Recovery Email Sent</h4>
-                <p className="text-xs text-green-700 mt-1">
-                  If an account exists for <span className="font-semibold">{forgotEmail}</span>, instructions have been sent.
+                <h4 className="font-bold text-green-900 text-base">Password Reset Successfully!</h4>
+                <p className="text-xs text-green-700 mt-2">
+                  Your password has been updated. You can now sign in using your official User ID and your new password.
                 </p>
-                <div className="mt-4 pt-3 border-t border-green-200/60 text-xs text-gray-500 text-left">
-                  <p className="font-medium text-gray-700 mb-1">Demo Accounts Passwords:</p>
-                  <p>• Student / Alumni: <code className="bg-white px-1.5 py-0.5 rounded border">Password@123</code></p>
-                  <p>• Administrator: <code className="bg-white px-1.5 py-0.5 rounded border">Admin@123</code></p>
-                </div>
                 <button
                   type="button"
-                  onClick={() => setIsForgotModalOpen(false)}
-                  className="mt-4 w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-lg transition-colors"
+                  onClick={() => {
+                    setIsForgotModalOpen(false);
+                    setForgotSubmitted(false);
+                  }}
+                  className="mt-5 w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-lg transition-colors shadow-sm"
                 >
-                  Back to Sign In
+                  Proceed to Sign In
                 </button>
               </div>
             ) : (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!forgotEmail.trim()) {
-                    toast.error('Please enter your email');
-                    return;
-                  }
-                  setForgotSending(true);
-                  setTimeout(() => {
-                    setForgotSending(false);
-                    setForgotSubmitted(true);
-                  }, 600);
-                }}
-                className="space-y-4"
-              >
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email address
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={forgotEmail}
-                    onChange={(e) => setForgotEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-xs focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-                  />
-                </div>
+              <>
+                <p className="text-xs text-gray-600 mb-4 bg-indigo-50 border border-indigo-100 p-2.5 rounded-lg">
+                  Enter the <strong>User ID</strong> provided by your college admin, and the <strong>recovery email</strong> saved in your profile section.
+                </p>
 
-                <div className="flex justify-end gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsForgotModalOpen(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={forgotSending}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-                  >
-                    {forgotSending ? 'Sending...' : 'Send Reset Link'}
-                  </button>
-                </div>
-              </form>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!forgotData.rollNumberOrEmail.trim()) {
+                      toast.error('Please enter your User ID / Roll Number');
+                      return;
+                    }
+                    if (!forgotData.email.trim()) {
+                      toast.error('Please enter your profile recovery email address');
+                      return;
+                    }
+                    if (forgotData.newPassword.length < 6) {
+                      toast.error('New password must be at least 6 characters');
+                      return;
+                    }
+                    if (forgotData.newPassword !== forgotData.confirmPassword) {
+                      toast.error('Passwords do not match');
+                      return;
+                    }
+
+                    try {
+                      setForgotLoading(true);
+                      await resetPassword({
+                        rollNumberOrEmail: forgotData.rollNumberOrEmail.trim(),
+                        email: forgotData.email.trim(),
+                        newPassword: forgotData.newPassword
+                      });
+                      setForgotSubmitted(true);
+                      toast.success('Password updated successfully!');
+                      setFormData(prev => ({ ...prev, email: forgotData.rollNumberOrEmail.trim(), password: '' }));
+                    } catch (err) {
+                      toast.error(err.response?.data?.message || 'Verification failed. Details do not match institutional records.');
+                    } finally {
+                      setForgotLoading(false);
+                    }
+                  }}
+                  className="space-y-3.5"
+                >
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      User ID / Roll Number (Provided by Admin)
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={forgotData.rollNumberOrEmail}
+                      onChange={(e) => setForgotData(prev => ({ ...prev, rollNumberOrEmail: e.target.value }))}
+                      placeholder="e.g. 21CS101, 15CS042, or ADMIN01"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-xs focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Profile Recovery Email Address
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={forgotData.email}
+                      onChange={(e) => setForgotData(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="e.g. rahul.verma@example.com"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-xs focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                    />
+                    <p className="mt-1 text-[11px] text-gray-400">
+                      Must match the recovery email saved in your profile section.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      New Password
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      minLength={6}
+                      value={forgotData.newPassword}
+                      onChange={(e) => setForgotData(prev => ({ ...prev, newPassword: e.target.value }))}
+                      placeholder="Minimum 6 characters"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-xs focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Confirm New Password
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      minLength={6}
+                      value={forgotData.confirmPassword}
+                      onChange={(e) => setForgotData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      placeholder="Re-enter new password"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-xs focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                    />
+                  </div>
+
+                  <div className="pt-2 border-t border-gray-100 text-[11px] text-gray-500 space-y-1">
+                    <p className="font-semibold text-gray-700">Can't remember your registered email?</p>
+                    <p>Contact the College Administration at <span className="font-mono text-indigo-600">admin@alumniconnect.com</span> to request an admin password reset.</p>
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsForgotModalOpen(false)}
+                      className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={forgotLoading}
+                      className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-1.5 shadow-xs"
+                    >
+                      {forgotLoading ? 'Verifying...' : 'Update Password'}
+                    </button>
+                  </div>
+                </form>
+              </>
             )}
           </div>
         </div>

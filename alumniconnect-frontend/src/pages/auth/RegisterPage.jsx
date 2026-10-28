@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiBriefcase, FiAlertCircle, FiCheck } from 'react-icons/fi';
+import { FiUser, FiLock, FiEye, FiEyeOff, FiBriefcase, FiAlertCircle, FiCheck, FiShield, FiInfo } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({
     name: '',
     rollNumber: '',
-    email: '',
     password: '',
     confirmPassword: '',
     role: 'student'
@@ -52,15 +51,13 @@ const RegisterPage = () => {
   };
 
   const validateForm = () => {
-    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
-      setError('All fields are required');
+    if (!formData.name.trim() || !formData.rollNumber.trim() || !formData.password || !formData.confirmPassword) {
+      setError('Please fill in all required fields (Full Name, User ID / Roll Number, and Password)');
       return false;
     }
-    
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError('Please enter a valid email address');
+
+    if (formData.rollNumber.trim().length < 3) {
+      setError('User ID / Roll Number must be at least 3 characters');
       return false;
     }
     
@@ -90,17 +87,17 @@ const RegisterPage = () => {
         : `ROLE_${formData.role?.toUpperCase() || 'STUDENT'}`;
       
       const payload = {
-        fullName: formData.name,
-        rollNumber: formData.rollNumber?.trim() || undefined,
-        email: formData.email,
+        fullName: formData.name.trim(),
+        rollNumber: formData.rollNumber.trim().toUpperCase(),
         password: formData.password,
         role: roleMapped
       };
+
       await register(payload);
-      toast.success('Registration successful! Please sign in.');
+      toast.success('Registration successful! Please sign in using your College User ID.');
       navigate('/login');
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Failed to register. Please try again.');
+      setError(err.response?.data?.message || 'Registration failed. Please check your details and try again.');
     } finally {
       setIsLoading(false);
     }
@@ -114,7 +111,6 @@ const RegisterPage = () => {
   };
 
   const getStrengthText = () => {
-    if (formData.password.length === 0) return '';
     if (passwordStrength <= 25) return 'Weak';
     if (passwordStrength <= 50) return 'Fair';
     if (passwordStrength <= 75) return 'Good';
@@ -129,20 +125,28 @@ const RegisterPage = () => {
             AlumniConnect
           </Link>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Create your account
+            Institutional Registration
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Already have an account?{' '}
             <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
-              Sign in
+              Sign in with your User ID
             </Link>
           </p>
         </div>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-gray-100">
+        <div className="bg-white py-8 px-4 shadow-sm sm:rounded-2xl sm:px-10 border border-gray-100">
           
+          {/* Institutional Note */}
+          <div className="mb-5 bg-indigo-50 border border-indigo-100 rounded-xl p-3.5 flex items-start gap-2.5">
+            <FiInfo className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+            <p className="text-xs text-indigo-900 leading-relaxed">
+              <strong>No email required to register.</strong> Sign up using your official College ID. You can add a personal recovery email later in your profile section.
+            </p>
+          </div>
+
           {error && (
             <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
               <div className="flex items-center">
@@ -152,27 +156,27 @@ const RegisterPage = () => {
             </div>
           )}
 
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-5" onSubmit={handleSubmit}>
             
             {/* Role Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">I am a...</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">I am registering as...</label>
               <div className="grid grid-cols-2 gap-4">
                 <div 
                   onClick={() => handleChange({ target: { name: 'role', value: 'student' }})}
-                  className={`cursor-pointer rounded-lg border-2 p-4 flex flex-col items-center justify-center transition-colors relative ${formData.role === 'student' ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300'}`}
+                  className={`cursor-pointer rounded-xl border-2 p-3.5 flex flex-col items-center justify-center transition-colors relative ${formData.role === 'student' ? 'border-indigo-600 bg-indigo-50/50' : 'border-gray-200 hover:border-indigo-300'}`}
                 >
-                  <FiUser className={`h-8 w-8 mb-2 ${formData.role === 'student' ? 'text-indigo-600' : 'text-gray-400'}`} />
-                  <span className={`font-medium ${formData.role === 'student' ? 'text-indigo-900' : 'text-gray-600'}`}>Student</span>
+                  <FiUser className={`h-7 w-7 mb-1.5 ${formData.role === 'student' ? 'text-indigo-600' : 'text-gray-400'}`} />
+                  <span className={`font-semibold text-sm ${formData.role === 'student' ? 'text-indigo-900' : 'text-gray-600'}`}>Current Student</span>
                   {formData.role === 'student' && <FiCheck className="absolute top-2 right-2 text-indigo-600" />}
                 </div>
                 
                 <div 
                   onClick={() => handleChange({ target: { name: 'role', value: 'alumni' }})}
-                  className={`cursor-pointer rounded-lg border-2 p-4 flex flex-col items-center justify-center transition-colors relative ${formData.role === 'alumni' ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300'}`}
+                  className={`cursor-pointer rounded-xl border-2 p-3.5 flex flex-col items-center justify-center transition-colors relative ${formData.role === 'alumni' ? 'border-indigo-600 bg-indigo-50/50' : 'border-gray-200 hover:border-indigo-300'}`}
                 >
-                  <FiBriefcase className={`h-8 w-8 mb-2 ${formData.role === 'alumni' ? 'text-indigo-600' : 'text-gray-400'}`} />
-                  <span className={`font-medium ${formData.role === 'alumni' ? 'text-indigo-900' : 'text-gray-600'}`}>Alumni</span>
+                  <FiBriefcase className={`h-7 w-7 mb-1.5 ${formData.role === 'alumni' ? 'text-indigo-600' : 'text-gray-400'}`} />
+                  <span className={`font-semibold text-sm ${formData.role === 'alumni' ? 'text-indigo-900' : 'text-gray-600'}`}>College Alumni</span>
                   {formData.role === 'alumni' && <FiCheck className="absolute top-2 right-2 text-indigo-600" />}
                 </div>
               </div>
@@ -180,7 +184,7 @@ const RegisterPage = () => {
 
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                Full Name
+                Full Name <span className="text-red-500">*</span>
               </label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -193,60 +197,39 @@ const RegisterPage = () => {
                   required
                   value={formData.name}
                   onChange={handleChange}
-                  className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2 border"
-                  placeholder="John Doe"
+                  className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-lg py-2 border"
+                  placeholder="e.g. Rahul Verma"
                 />
               </div>
             </div>
 
             <div>
               <label htmlFor="rollNumber" className="block text-sm font-medium text-gray-700">
-                College Roll Number / Registration ID
+                College User ID / Roll Number <span className="text-red-500">*</span>
               </label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiUser className="h-5 w-5 text-gray-400" />
+                  <FiShield className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
                   id="rollNumber"
                   name="rollNumber"
                   type="text"
+                  required
                   value={formData.rollNumber}
                   onChange={handleChange}
-                  className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2 border uppercase"
+                  className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-lg py-2 border font-mono uppercase"
                   placeholder="e.g. 21CS101 or 18IT045"
                 />
               </div>
               <p className="mt-1 text-xs text-gray-500">
-                Permanent institutional ID assigned by your college.
+                Used to sign in to your institutional account.
               </p>
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiMail className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2 border"
-                  placeholder="you@example.com"
-                />
-              </div>
-            </div>
-
-            <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
+                Password <span className="text-red-500">*</span>
               </label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -259,8 +242,8 @@ const RegisterPage = () => {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 pr-10 sm:text-sm border-gray-300 rounded-md py-2 border"
-                  placeholder="••••••••"
+                  className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 pr-10 sm:text-sm border-gray-300 rounded-lg py-2 border"
+                  placeholder="Minimum 8 characters"
                 />
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
                   <button
@@ -296,7 +279,7 @@ const RegisterPage = () => {
 
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                Confirm Password
+                Confirm Password <span className="text-red-500">*</span>
               </label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -309,8 +292,8 @@ const RegisterPage = () => {
                   required
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 pr-10 sm:text-sm border-gray-300 rounded-md py-2 border"
-                  placeholder="••••••••"
+                  className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 pr-10 sm:text-sm border-gray-300 rounded-lg py-2 border"
+                  placeholder="Re-enter password"
                 />
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
                   <button
@@ -324,8 +307,8 @@ const RegisterPage = () => {
               </div>
             </div>
 
-            <div className="text-sm text-gray-500">
-              By creating an account, you agree to our{' '}
+            <div className="text-xs text-gray-500">
+              By registering, you agree to our{' '}
               <button
                 type="button"
                 onClick={() => setLegalModal({ open: true, title: 'Terms of Service', type: 'terms' })}
@@ -347,7 +330,7 @@ const RegisterPage = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
               >
                 {isLoading ? (
                   <span className="flex items-center">
@@ -358,7 +341,7 @@ const RegisterPage = () => {
                     Creating account...
                   </span>
                 ) : (
-                  'Create Account'
+                  'Create Institutional Account'
                 )}
               </button>
             </div>
@@ -394,7 +377,7 @@ const RegisterPage = () => {
                 <>
                   <p>Your privacy is of the utmost importance to <strong>AlumniConnect</strong>.</p>
                   <h4 className="font-semibold text-gray-900">1. Information We Collect</h4>
-                  <p>We collect names, university email addresses, graduation years, academic departments, work history, and uploaded resumes to provide personalized mentorship matching and career referrals.</p>
+                  <p>We collect names, roll numbers, academic departments, work history, and uploaded resumes to provide personalized mentorship matching and career referrals.</p>
                   <h4 className="font-semibold text-gray-900">2. How Data is Shared</h4>
                   <p>Your profile data is strictly visible to verified students and registered alumni within the platform network. We never sell or license personal data to third-party advertisers.</p>
                   <h4 className="font-semibold text-gray-900">3. Security & Control</h4>

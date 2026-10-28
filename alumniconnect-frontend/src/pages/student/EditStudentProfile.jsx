@@ -40,6 +40,7 @@ const EditStudentProfile = () => {
   const [saving, setSaving] = useState(false);
   
   const [formData, setFormData] = useState({
+    email: '',
     phone: '',
     department: '',
     degree: '',
@@ -79,6 +80,7 @@ const EditStudentProfile = () => {
       }
 
       setFormData({
+        email: profile.email || profile.user?.email || '',
         phone: profile.phone || '',
         department: profile.department || '',
         degree: profile.degree || '',
@@ -115,6 +117,7 @@ const EditStudentProfile = () => {
     try {
       setSaving(true);
       const payload = {
+        email: formData.email?.trim() || null,
         phone: formData.phone?.trim() || null,
         department: formData.department?.trim() || null,
         degree: formData.degree?.trim() || null,
@@ -129,6 +132,9 @@ const EditStudentProfile = () => {
       };
 
       await updateStudentProfile(payload);
+      if (formData.email?.trim()) {
+        updateUser({ email: formData.email.trim() });
+      }
       toast.success('Profile updated successfully');
       navigate('/student/profile');
     } catch (err) {
@@ -305,6 +311,22 @@ const EditStudentProfile = () => {
         <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-lg font-bold text-gray-900 mb-6 border-b pb-2">Basic Information</h2>
           <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Recovery Email Address
+              </label>
+              <input 
+                type="email" 
+                name="email" 
+                value={formData.email} 
+                onChange={handleInputChange} 
+                placeholder="e.g. rahul.verma@example.com"
+                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Used for password recovery (Forgot Password). Sign-in uses your Roll Number.
+              </p>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
               <input 

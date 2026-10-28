@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FiEdit, FiMapPin, FiBriefcase, FiAward, FiBook, FiGithub, FiLinkedin, FiMail, FiCheckCircle } from 'react-icons/fi';
+import { FiEdit, FiMapPin, FiBriefcase, FiAward, FiBook, FiGithub, FiLinkedin, FiMail, FiCamera } from 'react-icons/fi';
 import { getAlumniProfile, updateAlumniProfile } from '../../api/alumniApi';
+import { useAuth } from '../../context/AuthContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Badge from '../../components/common/Badge';
 import EmptyState from '../../components/common/EmptyState';
 import { formatDate } from '../../utils/formatters';
+import ProfilePictureModal from '../../components/common/ProfilePictureModal';
 
 const AlumniProfile = () => {
+  const { user } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [showPictureModal, setShowPictureModal] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -63,30 +67,40 @@ const AlumniProfile = () => {
         <div className="px-6 pb-6 relative">
           <div className="flex justify-between items-end mb-4">
             <div className="-mt-16 flex items-center">
-              {profile.profilePictureUrl || profile.avatar ? (
-                <img
-                  src={profile.profilePictureUrl || profile.avatar}
-                  alt={profile.fullName || profile.name}
-                  className="w-32 h-32 rounded-full border-4 border-white bg-white object-cover shadow-md"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    if (e.currentTarget.nextSibling) {
-                      e.currentTarget.nextSibling.style.display = 'flex';
-                    }
-                  }}
-                />
-              ) : null}
-              <div
-                className={`w-32 h-32 rounded-full border-4 border-white bg-indigo-600 text-white font-bold text-3xl items-center justify-center shadow-md ${
-                  profile.profilePictureUrl || profile.avatar ? 'hidden' : 'flex'
-                }`}
-              >
-                {(profile.fullName || profile.name || 'Alumni')
-                  .split(' ')
-                  .filter(Boolean)
-                  .slice(0, 2)
-                  .map(n => n.charAt(0).toUpperCase())
-                  .join('') || 'AL'}
+              <div className="relative group">
+                {profile.profilePictureUrl || profile.avatar ? (
+                  <img
+                    src={profile.profilePictureUrl || profile.avatar}
+                    alt={profile.fullName || profile.name}
+                    className="w-32 h-32 rounded-full border-4 border-white bg-white object-cover shadow-md"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      if (e.currentTarget.nextSibling) {
+                        e.currentTarget.nextSibling.style.display = 'flex';
+                      }
+                    }}
+                  />
+                ) : null}
+                <div
+                  className={`w-32 h-32 rounded-full border-4 border-white bg-indigo-600 text-white font-bold text-3xl items-center justify-center shadow-md ${
+                    profile.profilePictureUrl || profile.avatar ? 'hidden' : 'flex'
+                  }`}
+                >
+                  {(profile.fullName || profile.name || 'Alumni')
+                    .split(' ')
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map(n => n.charAt(0).toUpperCase())
+                    .join('') || 'AL'}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPictureModal(true)}
+                  className="absolute bottom-1 right-1 p-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg border-2 border-white transition-all hover:scale-110"
+                  title="Change Profile Picture"
+                >
+                  <FiCamera className="w-4 h-4" />
+                </button>
               </div>
             </div>
             <Link to="/alumni/profile/edit" className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 shadow-sm transition-colors">
@@ -98,11 +112,11 @@ const AlumniProfile = () => {
             <h1 className="text-2xl font-bold text-gray-900 flex flex-wrap items-center gap-2">
               {profile.fullName || profile.name}
               {(profile.verificationStatus === 'VERIFIED' || profile.isVerified) && (
-                <FiCheckCircle className="text-blue-500 w-5 h-5" title="Verified" />
+                <FiCheckCircle className="text-blue-500 w-5 h-5" title="Verified Alumni" />
               )}
               {profile.rollNumber && (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 font-mono">
-                  Alumni ID: {profile.rollNumber}
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 font-mono" title="Institutional User ID">
+                  User ID: {profile.rollNumber}
                 </span>
               )}
             </h1>
@@ -121,9 +135,15 @@ const AlumniProfile = () => {
                 </div>
               )}
             </div>
-            <div className="mt-4 flex flex-wrap gap-3">
-              {profile.email && (
-                <a href={`mailto:${profile.email}`} className="text-gray-500 hover:text-indigo-600"><FiMail className="w-5 h-5" /></a>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              {profile.email ? (
+                <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-md">
+                  <FiMail className="w-3.5 h-3.5 text-indigo-500" />
+                  <span className="font-medium text-slate-800">{profile.email}</span>
+                  <span className="text-[10px] text-slate-400">(Recovery Email)</span>
+                </div>
+              ) : (
+                <span className="text-xs text-amber-600">No recovery email set</span>
               )}
               {profile.linkedinUrl && (
                 <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-blue-600"><FiLinkedin className="w-5 h-5" /></a>
@@ -202,6 +222,15 @@ const AlumniProfile = () => {
           </div>
         </div>
       </div>
+
+      <ProfilePictureModal
+        isOpen={showPictureModal}
+        onClose={() => setShowPictureModal(false)}
+        currentPictureUrl={profile?.profilePictureUrl || profile?.avatar}
+        onUpdated={(newUrl) => {
+          setProfile(prev => ({ ...prev, profilePictureUrl: newUrl }));
+        }}
+      />
     </div>
   );
 };

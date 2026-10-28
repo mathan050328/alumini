@@ -6,15 +6,19 @@ import {
 } from 'recharts';
 import {
   FiUsers, FiUserCheck, FiUserPlus, FiBriefcase,
-  FiFileText, FiCalendar, FiActivity, FiShield
+  FiFileText, FiCalendar, FiActivity, FiShield, FiCamera
 } from 'react-icons/fi';
 import { getDashboardStats } from '../../api/adminApi';
+import { useAuth } from '../../context/AuthContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import ProfilePictureModal from '../../components/common/ProfilePictureModal';
 import { toast } from 'react-toastify';
 
 const AdminDashboard = () => {
+  const { user } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showPictureModal, setShowPictureModal] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -76,8 +80,47 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="relative group">
+            {user?.profilePictureUrl ? (
+              <img
+                src={user.profilePictureUrl}
+                alt={user.fullName || 'Admin'}
+                className="w-16 h-16 rounded-full object-cover border-2 border-indigo-100 shadow-sm"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-indigo-600 text-white font-bold text-xl flex items-center justify-center shadow-sm">
+                {user?.fullName?.charAt(0)?.toUpperCase() || 'A'}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowPictureModal(true)}
+              className="absolute -bottom-1 -right-1 p-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow border-2 border-white transition-transform hover:scale-110"
+              title="Change Profile Picture"
+            >
+              <FiCamera className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-gray-900">{user?.fullName || 'Administrator'}</h1>
+              <span className="px-2 py-0.5 rounded text-xs font-semibold bg-purple-100 text-purple-700">
+                System Admin
+              </span>
+            </div>
+            <p className="text-sm text-gray-500 mt-0.5">{user?.email}</p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setShowPictureModal(true)}
+          className="flex items-center gap-2 px-3.5 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 shadow-sm transition-colors"
+        >
+          <FiCamera className="w-4 h-4 text-gray-500" />
+          <span>Change Avatar</span>
+        </button>
       </div>
 
       {/* Stats Grid */}
@@ -182,6 +225,12 @@ const AdminDashboard = () => {
           </Link>
         </div>
       </div>
+
+      <ProfilePictureModal
+        isOpen={showPictureModal}
+        onClose={() => setShowPictureModal(false)}
+        currentPictureUrl={user?.profilePictureUrl}
+      />
     </div>
   );
 };
