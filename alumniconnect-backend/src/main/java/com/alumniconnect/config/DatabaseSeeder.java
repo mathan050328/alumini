@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -24,21 +25,72 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final StudentProfileRepository studentProfileRepository;
+    private final StudentProjectRepository studentProjectRepository;
     private final AlumniProfileRepository alumniProfileRepository;
+    private final AlumniExperienceRepository alumniExperienceRepository;
     private final SkillRepository skillRepository;
     private final JobRepository jobRepository;
+    private final JobApplicationRepository jobApplicationRepository;
+    private final SavedJobRepository savedJobRepository;
+    private final ReferralRequestRepository referralRequestRepository;
     private final EventRepository eventRepository;
+    private final EventRegistrationRepository eventRegistrationRepository;
     private final PostRepository postRepository;
+    private final PostLikeRepository postLikeRepository;
+    private final CommentRepository commentRepository;
+    private final MentorshipRepository mentorshipRepository;
+    private final MessageRepository messageRepository;
+    private final ConversationRepository conversationRepository;
+    private final NotificationRepository notificationRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
+    @Transactional
     public void run(String... args) {
-        if (userRepository.count() > 0) {
-            ensurePendingAlumniVerified();
-            return;
-        }
+        boolean needsSync = !userRepository.existsByRollNumberIgnoreCase("22CS101")
+                || !userRepository.existsByRollNumberIgnoreCase("22IT102")
+                || !userRepository.existsByRollNumberIgnoreCase("18CS042")
+                || !userRepository.existsByRollNumberIgnoreCase("19IT089")
+                || userRepository.existsByRollNumberIgnoreCase("21CS101")
+                || userRepository.existsByRollNumberIgnoreCase("17IT089");
 
-        logger.info("Initializing default development dataset...");
+        if (needsSync) {
+            logger.info("Syncing and initializing clean database with Mathan, Kumar, Arun, and Sujith...");
+            resetAndSeedCleanDataset();
+        } else {
+            ensurePendingAlumniVerified();
+        }
+    }
+
+    private void resetAndSeedCleanDataset() {
+        try {
+            notificationRepository.deleteAllInBatch();
+            messageRepository.deleteAllInBatch();
+            conversationRepository.deleteAllInBatch();
+            commentRepository.deleteAllInBatch();
+            postLikeRepository.deleteAllInBatch();
+            postRepository.deleteAllInBatch();
+            eventRegistrationRepository.deleteAllInBatch();
+            eventRepository.deleteAllInBatch();
+            savedJobRepository.deleteAllInBatch();
+            jobApplicationRepository.deleteAllInBatch();
+            referralRequestRepository.deleteAllInBatch();
+            jobRepository.deleteAllInBatch();
+            mentorshipRepository.deleteAllInBatch();
+            studentProjectRepository.deleteAllInBatch();
+            alumniExperienceRepository.deleteAllInBatch();
+            studentProfileRepository.deleteAllInBatch();
+            alumniProfileRepository.deleteAllInBatch();
+
+            List<User> users = userRepository.findAll();
+            for (User u : users) {
+                if (u.getRole() != Role.ROLE_ADMIN && !"ADMIN01".equalsIgnoreCase(u.getRollNumber())) {
+                    userRepository.delete(u);
+                }
+            }
+        } catch (Exception ex) {
+            logger.warn("Non-fatal table reset notice: {}", ex.getMessage());
+        }
 
         seedSkills();
         Skill javaSkill = findSkill("Java");
@@ -46,53 +98,90 @@ public class DatabaseSeeder implements CommandLineRunner {
         Skill reactSkill = findSkill("React.js");
         Skill awsSkill = findSkill("AWS");
         Skill dockerSkill = findSkill("Docker");
+        Skill pythonSkill = findSkill("Python");
+        Skill tailwindSkill = findSkill("Tailwind CSS");
+        Skill mysqlSkill = findSkill("MySQL");
 
-        User admin = createAdminUser();
+        User admin = userRepository.findByRollNumberIgnoreCase("ADMIN01")
+                .orElseGet(this::createAdminUser);
 
+        // Alumni 1: Arun V
         AlumniProfile arunAlumni = createAlumni(
-                "15CS042",
-                "arun.dev@gmail.com",
-                "Arun",
+                "18CS042",
+                "arun.v@gmail.com",
+                "Arun V",
                 "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
                 "+91 9876501234",
                 "Computer Science and Engineering",
-                2019,
+                2022,
                 "Infosys",
                 "Senior Systems Engineer",
-                5,
-                "Pune, India",
-                "Working as a backend engineer at Infosys for the past 5 years. I mainly deal with microservices and REST APIs. " +
-                "Happy to help juniors with resume reviews, mock interviews, or just figuring out where to start with placements.",
-                "https://github.com/arun-dev",
-                "https://linkedin.com/in/arun-dev",
-                Arrays.asList(javaSkill, springSkill, dockerSkill, awsSkill)
+                4,
+                "Bangalore, India",
+                "Senior backend engineer at Infosys specializing in enterprise microservices, Spring Boot, and cloud architecture. Happy to guide college juniors on campus placements, system design fundamentals, and mock technical rounds.",
+                "https://github.com/arun-v",
+                "https://linkedin.com/in/arun-v",
+                Arrays.asList(javaSkill, springSkill, dockerSkill, awsSkill, mysqlSkill)
         );
 
-        AlumniProfile jenishAlumni = createAlumni(
-                "17IT089",
-                "jenish.dev@gmail.com",
-                "Jenish",
-                "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150",
+        // Alumni 2: Sujith R
+        AlumniProfile sujithAlumni = createAlumni(
+                "19IT089",
+                "sujith.r@gmail.com",
+                "Sujith R",
+                "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150",
                 "+91 9845002345",
                 "Information Technology",
-                2021,
+                2023,
                 "Zoho Corporation",
-                "Software Developer",
+                "Full Stack Developer",
                 3,
                 "Chennai, India",
-                "Full stack developer at Zoho. I work on the CRM module — mostly Java on the backend and React for the UI. " +
-                "I remember how confusing placements were in final year, so I try to be available for anyone who needs guidance.",
-                "https://github.com/jenish-dev",
-                "https://linkedin.com/in/jenish-dev",
-                Arrays.asList(javaSkill, reactSkill, awsSkill)
+                "Full stack engineer at Zoho Corporation working on core CRM applications with React and Java. Always open to help students with modern web development, resume reviews, and career guidance.",
+                "https://github.com/sujith-dev",
+                "https://linkedin.com/in/sujith-r",
+                Arrays.asList(javaSkill, reactSkill, tailwindSkill, springSkill)
         );
 
-        createDefaultStudent(Arrays.asList(javaSkill, springSkill, reactSkill));
-        seedJobs(arunAlumni, jenishAlumni);
-        seedEvents(arunAlumni.getUser(), admin);
-        seedPosts(arunAlumni);
+        // Student 1: Mathan Kumar
+        createStudent(
+                "22CS101",
+                "mathan.kumar@example.com",
+                "Mathan Kumar",
+                "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+                "+91 9123456789",
+                "Computer Science and Engineering",
+                "B.Tech",
+                2026,
+                "Pre-final year CSE student passionate about full stack software engineering and cloud technologies. Currently building scalable web platforms and seeking internship and SDE opportunities. Open to connecting with alumni for guidance.",
+                "https://github.com/mathan050328",
+                "https://linkedin.com/in/mathan-kumar",
+                "Full Stack Development, Cloud Computing, System Design",
+                Arrays.asList(javaSkill, springSkill, reactSkill, dockerSkill, mysqlSkill)
+        );
 
-        logger.info("Development dataset initialized.");
+        // Student 2: Kumar S
+        createStudent(
+                "22IT102",
+                "kumar.s@example.com",
+                "Kumar S",
+                "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150",
+                "+91 9234567890",
+                "Information Technology",
+                "B.Tech",
+                2026,
+                "Third-year IT student focused on modern frontend architecture, microservices, and distributed systems. Active open source contributor and competitive programmer.",
+                "https://github.com/kumar-dev",
+                "https://linkedin.com/in/kumar-tech",
+                "Frontend Engineering, DevOps, Microservices",
+                Arrays.asList(reactSkill, pythonSkill, tailwindSkill, awsSkill)
+        );
+
+        seedJobs(arunAlumni, sujithAlumni);
+        seedEvents(arunAlumni.getUser(), admin);
+        seedPosts(arunAlumni, sujithAlumni);
+
+        logger.info("Clean dataset initialized successfully with Mathan, Kumar, Arun, and Sujith.");
     }
 
     private void ensurePendingAlumniVerified() {
@@ -111,10 +200,12 @@ public class DatabaseSeeder implements CommandLineRunner {
                 "Java", "Spring Boot", "React.js", "MySQL", "AWS",
                 "Docker", "System Design", "Microservices", "Python",
                 "Kubernetes", "Data Structures", "Tailwind CSS", "TypeScript",
-                "GraphQL", "Redis", "Kafka", "Machine Learning"
+                "GraphQL", "Redis", "Kafka", "Machine Learning", "PostgreSQL", "REST API"
         );
         for (String name : skillNames) {
-            skillRepository.save(Skill.builder().name(name).build());
+            if (skillRepository.findByNameIgnoreCase(name).isEmpty()) {
+                skillRepository.save(Skill.builder().name(name).build());
+            }
         }
     }
 
@@ -186,72 +277,82 @@ public class DatabaseSeeder implements CommandLineRunner {
         return alumniProfileRepository.save(profile);
     }
 
-    private void createDefaultStudent(List<Skill> skills) {
+    private void createStudent(
+            String rollNumber,
+            String email,
+            String fullName,
+            String avatarUrl,
+            String phone,
+            String department,
+            String degree,
+            int graduationYear,
+            String bio,
+            String githubUrl,
+            String linkedinUrl,
+            String careerInterests,
+            List<Skill> skills
+    ) {
         User studentUser = User.builder()
-                .rollNumber("21CS101")
-                .email(null)
+                .rollNumber(rollNumber)
+                .email(email)
                 .password(passwordEncoder.encode("Password@123"))
-                .fullName("Rahul Verma")
+                .fullName(fullName)
                 .role(Role.ROLE_STUDENT)
                 .isActive(true)
                 .passwordChanged(false)
-                .isEmailVerified(false)
-                .profilePictureUrl("https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150")
+                .isEmailVerified(true)
+                .profilePictureUrl(avatarUrl)
                 .build();
         userRepository.save(studentUser);
 
         StudentProfile studentProfile = StudentProfile.builder()
                 .user(studentUser)
-                .phone("+91 9123456780")
-                .department("Computer Science and Engineering")
-                .degree("B.Tech")
-                .graduationYear(2025)
-                .bio("Final year CSE student. Been working on a couple of side projects and trying to get better at system design. " +
-                     "Looking for SDE roles in backend or full stack. Open to connecting with alumni for guidance.")
-                .githubUrl("https://github.com/rahulverma25")
-                .linkedinUrl("https://linkedin.com/in/rahul-verma-cse")
-                .careerInterests("Backend Engineering, Full Stack Development, Cloud Computing")
+                .phone(phone)
+                .department(department)
+                .degree(degree)
+                .graduationYear(graduationYear)
+                .bio(bio)
+                .githubUrl(githubUrl)
+                .linkedinUrl(linkedinUrl)
+                .careerInterests(careerInterests)
                 .skills(new HashSet<>(skills))
                 .build();
         studentProfileRepository.save(studentProfile);
     }
 
-    private void seedJobs(AlumniProfile arunAlumni, AlumniProfile jenishAlumni) {
+    private void seedJobs(AlumniProfile arunAlumni, AlumniProfile sujithAlumni) {
         Job job1 = Job.builder()
                 .alumni(arunAlumni)
                 .title("Associate Backend Engineer")
                 .company("Infosys")
-                .location("Pune, India")
+                .location("Bangalore, India")
                 .employmentType(EmploymentType.FULL_TIME)
                 .experienceRequired("Fresher / 0-1 Year")
                 .requiredSkills("Java, Spring Boot, REST APIs, MySQL, Git")
-                .salaryRange("₹4L - ₹6.5L PA")
-                .description("Our team in Pune is looking for fresh graduates or early-career engineers with solid Java fundamentals. " +
-                              "You'll be working on internal enterprise services. I'm happy to refer strong candidates from my college.")
+                .salaryRange("₹5L - ₹7L PA")
+                .description("Our backend team at Infosys Bangalore is looking for fresh graduates with strong Java and REST API fundamentals. Happy to provide referrals to college juniors.")
                 .applicationUrl("https://infosys.com/careers")
                 .referralAvailable(true)
-                .postedDate(LocalDate.now().minusDays(4))
-                .applicationDeadline(LocalDate.now().plusDays(28))
+                .postedDate(LocalDate.now().minusDays(3))
+                .applicationDeadline(LocalDate.now().plusDays(25))
                 .isActive(true)
                 .build();
         jobRepository.save(job1);
 
         Job job2 = Job.builder()
-                .alumni(jenishAlumni)
-                .title("Junior Software Developer (Full Stack)")
+                .alumni(sujithAlumni)
+                .title("Software Developer (Full Stack)")
                 .company("Zoho Corporation")
                 .location("Chennai, India")
                 .employmentType(EmploymentType.FULL_TIME)
                 .experienceRequired("Fresher / 0-2 Years")
-                .requiredSkills("Java, React.js, SQL, REST APIs")
-                .salaryRange("₹5L - ₹8L PA")
-                .description("Zoho's CRM team is hiring developers who enjoy building real-world products used by millions. " +
-                              "We value problem-solving over competitive programming scores. Good communication and clean code matter here. " +
-                              "Drop me a message if you want to know more about the role or the team culture before applying.")
+                .requiredSkills("Java, React.js, PostgreSQL, REST APIs")
+                .salaryRange("₹6L - ₹8.5L PA")
+                .description("Zoho's CRM team is hiring developers passionate about building clean user experiences and robust web services. Send me a message for a direct referral.")
                 .applicationUrl("https://careers.zohocorp.com")
                 .referralAvailable(true)
-                .postedDate(LocalDate.now().minusDays(2))
-                .applicationDeadline(LocalDate.now().plusDays(22))
+                .postedDate(LocalDate.now().minusDays(1))
+                .applicationDeadline(LocalDate.now().plusDays(20))
                 .isActive(true)
                 .build();
         jobRepository.save(job2);
@@ -260,13 +361,12 @@ public class DatabaseSeeder implements CommandLineRunner {
     private void seedEvents(User alumniOrganizer, User adminOrganizer) {
         Event event1 = Event.builder()
                 .organizer(alumniOrganizer)
-                .title("Placement Prep: Resume, DSA, and What Actually Matters")
-                .description("An informal session where I'll share what worked for me during campus placements and what I wish I knew earlier. " +
-                              "We'll cover resume building, DSA strategy, and how to handle HR rounds. Feel free to bring your questions.")
+                .title("Placement Prep: DSA, System Design, and What Actually Matters")
+                .description("An interactive session sharing campus placement strategies, DSA roadmap, and mock technical interview tips.")
                 .eventType(EventType.CAREER_GUIDANCE)
                 .eventDate(LocalDateTime.now().plusDays(7).withHour(18).withMinute(30))
                 .location("Google Meet (link shared on registration)")
-                .maxParticipants(60)
+                .maxParticipants(80)
                 .registrationDeadline(LocalDateTime.now().plusDays(6))
                 .isActive(true)
                 .build();
@@ -274,9 +374,8 @@ public class DatabaseSeeder implements CommandLineRunner {
 
         Event event2 = Event.builder()
                 .organizer(adminOrganizer)
-                .title("Alumni Homecoming – Annual Meetup 2026")
-                .description("Come back to campus, reconnect with batchmates, and meet the current students. " +
-                              "The evening includes a networking dinner, a career panel, and a few awards for outstanding alumni.")
+                .title("Alumni Homecoming & Networking Meetup 2026")
+                .description("Annual campus gathering reconnecting past batches with current students for career mentoring and networking dinner.")
                 .eventType(EventType.MEETUP)
                 .eventDate(LocalDateTime.now().plusDays(20).withHour(10).withMinute(0))
                 .location("Main Campus Auditorium, Block A")
@@ -287,20 +386,27 @@ public class DatabaseSeeder implements CommandLineRunner {
         eventRepository.save(event2);
     }
 
-    private void seedPosts(AlumniProfile author) {
-        Post post = Post.builder()
-                .alumni(author)
-                .title("My Placement Journey — What I'd Tell Myself in Final Year")
+    private void seedPosts(AlumniProfile arun, AlumniProfile sujith) {
+        Post post1 = Post.builder()
+                .alumni(arun)
+                .title("My Campus Placement Journey — What I'd Tell Myself in College")
                 .category(PostCategory.INTERVIEW_EXPERIENCE)
-                .content("I got placed at Infosys in my final year after a lot of back and forth. I'm not going to pretend I had it all figured out. " +
-                         "I failed a couple of rounds at other companies before things clicked. A few things that actually helped: " +
-                         "practicing DSA consistently (not in one panic-sprint before the exam), doing mock interviews with friends, " +
-                         "and honestly just keeping my resume to one clean page. If you're in final year and anxious about placements, " +
-                         "feel free to reach out — I check my messages on this platform.")
-                .likeCount(18)
-                .commentCount(4)
+                .content("A few key takeaways from campus placements: stay consistent with DSA, build at least 2 solid full-stack projects you can explain deeply, and keep your resume clean and concise. If you need a resume review, feel free to reach out!")
+                .likeCount(24)
+                .commentCount(5)
                 .isVisible(true)
                 .build();
-        postRepository.save(post);
+        postRepository.save(post1);
+
+        Post post2 = Post.builder()
+                .alumni(sujith)
+                .title("Full Stack Roadmap for 2026: Balancing Frontend & Backend")
+                .category(PostCategory.CAREER_ADVICE)
+                .content("In industry, teams value engineers who understand how the frontend communicates with the backend — state management, REST contracts, and database query optimization. Happy to answer questions from juniors.")
+                .likeCount(19)
+                .commentCount(3)
+                .isVisible(true)
+                .build();
+        postRepository.save(post2);
     }
 }
