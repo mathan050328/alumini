@@ -247,75 +247,16 @@ const LoginPage = () => {
             </div>
           </form>
 
-          {/* Quick Demo Sign-In */}
-          <div className="mt-6 pt-6 border-t border-gray-100">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider text-center mb-3">
-              One-Click Demo Sign In (Admin-Issued User ID)
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={async () => {
-                  setFormData({ email: '21CS101', password: 'Password@123' });
-                  setIsLoading(true);
-                  try {
-                    await login({ email: '21CS101', password: 'Password@123' });
-                    toast.success('Signed in as Rahul Verma (21CS101)');
-                  } catch (e) {
-                    setError('Demo login failed');
-                  } finally {
-                    setIsLoading(false);
-                  }
-                }}
-                className="py-2 px-2 border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 rounded-lg text-xs font-semibold text-indigo-700 transition-colors text-center shadow-xs"
-              >
-                🎓 21CS101 (Student)
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  setFormData({ email: '15CS042', password: 'Password@123' });
-                  setIsLoading(true);
-                  try {
-                    await login({ email: '15CS042', password: 'Password@123' });
-                    toast.success('Signed in as Arun (15CS042)');
-                  } catch (e) {
-                    setError('Demo login failed');
-                  } finally {
-                    setIsLoading(false);
-                  }
-                }}
-                className="py-2 px-2 border border-purple-200 bg-purple-50 hover:bg-purple-100 rounded-lg text-xs font-semibold text-purple-700 transition-colors text-center shadow-xs"
-              >
-                💼 15CS042 (Arun)
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  setFormData({ email: 'ADMIN01', password: 'Admin@123' });
-                  setIsLoading(true);
-                  try {
-                    await login({ email: 'ADMIN01', password: 'Admin@123' });
-                    toast.success('Signed in as System Administrator (ADMIN01)');
-                  } catch (e) {
-                    setError('Demo login failed');
-                  } finally {
-                    setIsLoading(false);
-                  }
-                }}
-                className="py-2 px-2 border border-slate-300 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-semibold text-slate-800 transition-colors text-center shadow-xs"
-              >
-                🛡️ ADMIN01
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-4 pt-4 border-t border-gray-100 text-center">
+          {/* Institutional registration & support link */}
+          <div className="mt-6 pt-5 border-t border-gray-100 text-center space-y-2">
             <p className="text-xs text-gray-500">
-              New here?{' '}
+              New student or alumni?{' '}
               <Link to="/register" className="font-semibold text-indigo-600 hover:text-indigo-500">
                 Register with your College ID
               </Link>
+            </p>
+            <p className="text-[11px] text-gray-400">
+              Need assistance? Contact <span className="font-medium text-gray-600">support@alumniconnect.edu</span>
             </p>
           </div>
 
